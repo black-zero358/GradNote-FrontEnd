@@ -12,9 +12,18 @@ const Settings = () => {
     navigate('/login');
   };
   
+  const handleBack = () => {
+    navigate('/');
+  };
+  
   return (
     <div className="settings-container">
-      <h1>设置</h1>
+      <div className="settings-header">
+        <button className="back-button" onClick={handleBack}>
+          ← 返回仪表盘
+        </button>
+        <h1>设置</h1>
+      </div>
       <div className="settings-section">
         <h2>账户设置</h2>
         <div className="settings-option">

@@ -271,4 +271,106 @@
   .main-content:not(.expanded) {
     margin-left: 250px;
   }
+}
+
+/* 设置弹窗样式 */
+.settings-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.settings-modal {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  animation: modal-fade-in 0.3s ease;
+}
+
+@keyframes modal-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.settings-modal .settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.settings-modal .settings-header h2 {
+  margin: 0;
+  font-size: 20px;
+  color: #333;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #888;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.close-button:hover {
+  color: #333;
+}
+
+.settings-modal .settings-content {
+  padding: 20px;
+}
+
+.settings-modal .settings-section {
+  margin-bottom: 20px;
+}
+
+.settings-modal .settings-section h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 18px;
+  color: #444;
+}
+
+.settings-modal .settings-option {
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.settings-modal .settings-option:last-child {
+  border-bottom: none;
+}
+
+.settings-modal .logout-button {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.settings-modal .logout-button:hover {
+  background-color: #d32f2f;
 } 

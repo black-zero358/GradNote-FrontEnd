@@ -15,6 +15,7 @@ const Dashboard = () => {
   const [knowledgeData, setKnowledgeData] = useState([]);
   const [knowledgeRatio, setKnowledgeRatio] = useState([]);
   const [collapsed, setCollapsed] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   
   useEffect(() => {
     // 模拟获取数据
@@ -72,9 +73,14 @@ const Dashboard = () => {
     setCollapsed(!collapsed);
   };
   
-  // 导航到设置页面
-  const navigateToSettings = () => {
-    navigate('/settings');
+  // 打开设置弹窗
+  const openSettings = () => {
+    setShowSettings(true);
+  };
+  
+  // 关闭设置弹窗
+  const closeSettings = () => {
+    setShowSettings(false);
   };
   
   return (
@@ -118,7 +124,7 @@ const Dashboard = () => {
             <span className="icon">❓</span>
             {!collapsed && 'Help'}
           </button>
-          <button className="settings-button" onClick={navigateToSettings}>
+          <button className="settings-button" onClick={openSettings}>
             <span className="icon">⚙️</span>
             {!collapsed && 'Setting'}
           </button>
@@ -246,6 +252,28 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+      
+      {/* 设置弹窗 */}
+      {showSettings && (
+        <div className="settings-modal-overlay">
+          <div className="settings-modal">
+            <div className="settings-header">
+              <h2>设置</h2>
+              <button className="close-button" onClick={closeSettings}>×</button>
+            </div>
+            <div className="settings-content">
+              <div className="settings-section">
+                <h3>账户设置</h3>
+                <div className="settings-option">
+                  <button className="logout-button" onClick={handleLogout}>
+                    退出登录
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

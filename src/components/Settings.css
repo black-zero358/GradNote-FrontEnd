@@ -4,6 +4,32 @@
   padding: 20px;
 }
 
+.settings-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.settings-header h1 {
+  margin: 0;
+  margin-left: 20px;
+}
+
+.back-button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.back-button:hover {
+  background-color: #388E3C;
+}
+
 .settings-section {
   background: #fff;
   border-radius: 8px;
