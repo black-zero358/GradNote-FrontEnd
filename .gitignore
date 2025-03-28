@@ -38,3 +38,10 @@ temp/
 Thumbs.db
 
 .cursor
+
+./*.png
+./*.jpg
+./*.jpeg
+./*.gif
+./*.bmp
+./*.webp
