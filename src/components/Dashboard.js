@@ -72,6 +72,11 @@ const Dashboard = () => {
     setCollapsed(!collapsed);
   };
   
+  // 导航到设置页面
+  const navigateToSettings = () => {
+    navigate('/settings');
+  };
+  
   return (
     <div className="dashboard-container">
       {/* 左侧导航 */}
@@ -113,7 +118,7 @@ const Dashboard = () => {
             <span className="icon">❓</span>
             {!collapsed && 'Help'}
           </button>
-          <button className="settings-button">
+          <button className="settings-button" onClick={navigateToSettings}>
             <span className="icon">⚙️</span>
             {!collapsed && 'Setting'}
           </button>
