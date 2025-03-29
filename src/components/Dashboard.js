@@ -7,59 +7,88 @@ import {
   PieChart, Pie, Cell
 } from 'recharts';
 import './Dashboard.css';
+import { getNewQuestionsCount, getNewKnowledgeCount } from '../api/dashboard';
 
 const Dashboard = () => {
-  const { logout } = useAuth();
+  const { logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [questionData, setQuestionData] = useState([]);
   const [knowledgeData, setKnowledgeData] = useState([]);
   const [knowledgeRatio, setKnowledgeRatio] = useState([]);
   const [collapsed, setCollapsed] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [timeRange, setTimeRange] = useState('weekly');
+  const [knowledgeTimeRange, setKnowledgeTimeRange] = useState('weekly');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [knowledgeError, setKnowledgeError] = useState('');
   
+  // 检查用户是否已认证
   useEffect(() => {
-    // 模拟获取数据
-    // 实际项目中应该通过API获取
-    const fetchData = async () => {
+    if (!isAuthenticated()) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, navigate]);
+  
+  // 获取错题数据
+  useEffect(() => {
+    const fetchQuestionData = async () => {
       try {
-        // 在实际应用中，这里需要从API获取数据
-        // const questionsRes = await api.get('/questions/stats');
-        // const knowledgeRes = await api.get('/knowledge/stats');
-        
-        // 模拟数据
-        const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        const mockQuestionData = weekDays.map(day => ({
-          day,
-          高数: Math.floor(Math.random() * 3000) + 1000,
-          线代: Math.floor(Math.random() * 2000) + 500,
-          概率论: Math.floor(Math.random() * 1000) + 300
-        }));
-        
-        const mockKnowledgeData = weekDays.map(day => ({
-          day,
-          高数: Math.floor(Math.random() * 3000) + 1000,
-          线代: Math.floor(Math.random() * 2000) + 500,
-          概率论: Math.floor(Math.random() * 1000) + 300
-        }));
-        
-        const mockKnowledgeRatio = [
-          { name: 'chapter 1', value: 546, color: '#8884d8' },
-          { name: 'chapter 2', value: 457, color: '#FF6B6B' },
-          { name: 'chapter 3', value: 386, color: '#4ECDC4' },
-          { name: 'chapter 4', value: 64, color: '#C7F464' }
-        ];
-        
-        setQuestionData(mockQuestionData);
-        setKnowledgeData(mockKnowledgeData);
-        setKnowledgeRatio(mockKnowledgeRatio);
+        setErrorMessage('');
+        const newQuestionsData = await getNewQuestionsCount(timeRange);
+        if (Array.isArray(newQuestionsData) && newQuestionsData.length > 0) {
+          setQuestionData(newQuestionsData);
+        } else {
+          setQuestionData([]);
+          setErrorMessage('暂无数据');
+        }
       } catch (error) {
         console.error('获取数据失败', error);
+        setErrorMessage(error.message || '获取数据失败，请检查网络连接');
+        if (error.response?.status === 401 || error.detail === '无法验证凭据') {
+          logout();
+          navigate('/login');
+        }
       }
     };
     
-    fetchData();
-  }, []);
+    fetchQuestionData();
+  }, [timeRange, logout, navigate]);
+
+  // 获取知识点数据
+  useEffect(() => {
+    const fetchKnowledgeData = async () => {
+      try {
+        setKnowledgeError('');
+        const newKnowledgeData = await getNewKnowledgeCount(knowledgeTimeRange);
+        if (Array.isArray(newKnowledgeData) && newKnowledgeData.length > 0) {
+          setKnowledgeData(newKnowledgeData);
+        } else {
+          setKnowledgeData([]);
+          setKnowledgeError('暂无数据');
+        }
+      } catch (error) {
+        console.error('获取知识点数据失败', error);
+        setKnowledgeError(error.message || '获取数据失败，请检查网络连接');
+        if (error.response?.status === 401 || error.detail === '无法验证凭据') {
+          logout();
+          navigate('/login');
+        }
+      }
+    };
+    
+    fetchKnowledgeData();
+  }, [knowledgeTimeRange, logout, navigate]);
   
+  // 处理时间范围变化
+  const handleTimeRangeChange = (e) => {
+    setTimeRange(e.target.value.toLowerCase());
+  };
+
+  // 处理知识点时间范围变化
+  const handleKnowledgeTimeRangeChange = (e) => {
+    setKnowledgeTimeRange(e.target.value.toLowerCase());
+  };
+
   // 计算知识点总数
   const totalKnowledgePoints = knowledgeRatio.reduce((sum, item) => sum + item.value, 0);
   
@@ -145,13 +174,13 @@ const Dashboard = () => {
                 <span className="chart-icon">📈</span>
                 新增错题数量
               </h3>
-              <select defaultValue="Weekly">
-                <option value="Weekly">Weekly</option>
-                <option value="Monthly">Monthly</option>
-                <option value="Yearly">Yearly</option>
+              <select value={timeRange} onChange={handleTimeRangeChange}>
+                <option value="weekly">每周</option>
+                <option value="monthly">每月</option>
+                <option value="yearly">每年</option>
               </select>
             </div>
-            <div className="chart-subtitle">Linear, Last 7 days</div>
+            <div className="chart-subtitle">Linear, Last {timeRange === 'weekly' ? '7 days' : timeRange === 'monthly' ? '30 days' : '365 days'}</div>
             <div className="chart-content">
               <LineChart
                 width={500}
@@ -178,30 +207,36 @@ const Dashboard = () => {
                 <span className="chart-icon">📊</span>
                 新增知识点数量
               </h3>
-              <select defaultValue="Weekly">
-                <option value="Weekly">Weekly</option>
-                <option value="Monthly">Monthly</option>
-                <option value="Yearly">Yearly</option>
+              <select value={knowledgeTimeRange} onChange={handleKnowledgeTimeRangeChange}>
+                <option value="weekly">每周</option>
+                <option value="monthly">每月</option>
+                <option value="yearly">每年</option>
               </select>
             </div>
-            <div className="chart-subtitle">Linear, Last 7 days</div>
-            <div className="chart-content">
-              <LineChart
-                width={500}
-                height={300}
-                data={knowledgeData}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="高数" stroke="#8884d8" />
-                <Line type="monotone" dataKey="线代" stroke="#FF6B6B" />
-                <Line type="monotone" dataKey="概率论" stroke="#4ECDC4" />
-              </LineChart>
+            <div className="chart-subtitle">
+              Linear, Last {knowledgeTimeRange === 'weekly' ? '7 days' : knowledgeTimeRange === 'monthly' ? '30 days' : '365 days'}
             </div>
+            {knowledgeError ? (
+              <div className="error-message">{knowledgeError}</div>
+            ) : (
+              <div className="chart-content">
+                <LineChart
+                  width={500}
+                  height={300}
+                  data={knowledgeData}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="day" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="高数" stroke="#8884d8" />
+                  <Line type="monotone" dataKey="线代" stroke="#FF6B6B" />
+                  <Line type="monotone" dataKey="概率论" stroke="#4ECDC4" />
+                </LineChart>
+              </div>
+            )}
           </div>
           
           {/* 知识点占比 */}
