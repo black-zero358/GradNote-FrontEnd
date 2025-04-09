@@ -45,3 +45,5 @@ Thumbs.db
 /*.gif
 /*.bmp
 /*.webp
+
+openapi.json
