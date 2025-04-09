@@ -815,6 +815,37 @@
                 }
             }
         },
+        "/api/v1/knowledge/user-marks": {
+            "get": {
+                "tags": [
+                    "知识点"
+                ],
+                "summary": "Get User Marks",
+                "description": "获取当前用户的所有标记",
+                "operationId": "get_user_marks_api_v1_knowledge_user_marks_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/Mark"
+                                    },
+                                    "type": "array",
+                                    "title": "Response Get User Marks Api V1 Knowledge User Marks Get"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2PasswordBearer": []
+                    }
+                ]
+            }
+        },
         "/api/v1/knowledge/{knowledge_point_id}": {
             "get": {
                 "tags": [
@@ -953,25 +984,172 @@
                 ]
             }
         },
-        "/api/v1/knowledge/user-marks": {
-            "get": {
+        "/api/v1/knowledge/": {
+            "post": {
                 "tags": [
                     "知识点"
                 ],
-                "summary": "Get User Marks",
-                "description": "获取当前用户的所有标记",
-                "operationId": "get_user_marks_api_v1_knowledge_user_marks_get",
+                "summary": "Create Knowledge Point",
+                "description": "创建新的知识点",
+                "operationId": "create_knowledge_point_api_v1_knowledge__post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/KnowledgePointCreate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/KnowledgePoint"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "OAuth2PasswordBearer": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/knowledge/analyze-from-question": {
+            "post": {
+                "tags": [
+                    "知识点"
+                ],
+                "summary": "Analyze Knowledge From Question",
+                "description": "分析题目文本，返回可能的知识点类别\n参数：\n    question_text: 题目文本\n\n返回：\n    categories: 知识点类别的列表",
+                "operationId": "analyze_knowledge_from_question_api_v1_knowledge_analyze_from_question_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/KnowledgeAnalyzeRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
                 "responses": {
                     "200": {
                         "description": "Successful Response",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "items": {
-                                        "$ref": "#/components/schemas/Mark"
-                                    },
-                                    "type": "array",
-                                    "title": "Response Get User Marks Api V1 Knowledge User Marks Get"
+                                    "$ref": "#/components/schemas/KnowledgeAnalyzeResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/knowledge/extract-from-solution": {
+            "post": {
+                "tags": [
+                    "知识点"
+                ],
+                "summary": "Extract Knowledge From Solution",
+                "description": "从解题过程中提取使用的知识点，区分\"已有知识点\"和\"新知识点\"\n参数：\n    question_text: 题目文本\n    solution_text: 解题过程文本\n    existing_knowledge_point_ids: 可选参数，如果提供，表示已知的知识点ID列表\n\n返回：\n    existing_knowledge_points: 已存在的知识点列表\n    new_knowledge_points: 新识别的知识点列表",
+                "operationId": "extract_knowledge_from_solution_api_v1_knowledge_extract_from_solution_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/KnowledgeExtractRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/KnowledgeExtractResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/knowledge/mark-confirmed": {
+            "post": {
+                "tags": [
+                    "知识点"
+                ],
+                "summary": "Mark Confirmed Knowledge Points",
+                "description": "处理用户确认的知识点标记，包括已有知识点和新知识点\n参数：\n    question_id: 题目ID\n    existing_knowledge_point_ids: 确认标记的已存在知识点ID列表\n    new_knowledge_points: 确认创建的新知识点列表\n\n返回：\n    question_id: 题目ID\n    marked_knowledge_points: 已标记的所有知识点（包括新创建的）",
+                "operationId": "mark_confirmed_knowledge_points_api_v1_knowledge_mark_confirmed_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/KnowledgeMarkRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/KnowledgeMarkResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
                                 }
                             }
                         }
@@ -990,7 +1168,7 @@
                     "解题"
                 ],
                 "summary": "Solve Question",
-                "description": "解答错题\n\n参数:\n- question_id: 错题ID\n\n返回:\n- 解题结果，包括解题步骤和相关知识点",
+                "description": "解答错题\n\n参数:\n- question_id: 错题ID\n- request_data: 包含知识点列表的请求体\n\n返回:\n- 解题结果，包括解题步骤和相关知识点",
                 "operationId": "solve_question_api_v1_solving__question_id__post",
                 "security": [
                     {
@@ -1008,6 +1186,16 @@
                         }
                     }
                 ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SolveRequest"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
                         "description": "Successful Response",
@@ -1032,37 +1220,31 @@
                 }
             }
         },
-        "/api/v1/solving/extract/{question_id}": {
+        "/api/v1/image/process": {
             "post": {
                 "tags": [
-                    "解题"
+                    "图像处理"
                 ],
-                "summary": "Extract Knowledge",
-                "description": "从错题中提取知识点\n\n参数:\n- question_id: 错题ID\n\n返回:\n- 提取的知识点信息",
-                "operationId": "extract_knowledge_api_v1_solving_extract__question_id__post",
-                "security": [
-                    {
-                        "OAuth2PasswordBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "question_id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "title": "Question Id"
+                "summary": "Process Image",
+                "description": "处理错题图像并提取文本\n\n此API仅进行图像处理并返回结果，不会在数据库中创建错题。\n常用于：\n1. 预览图像识别结果\n2. 获取图像文本后由前端进行进一步处理\n3. 作为其他API的基础服务（如/questions/from-image调用了此服务）\n\n处理流程:\n1. 上传并保存图片到服务器\n2. 使用图像处理服务提取文本内容\n3. 返回提取的文本和保存的图片URL\n\n参数:\n- file: 要处理的图像文件\n\n返回:\n- status: 处理状态 (success/error)\n- text: 从图像中提取的文本\n- image_url: 保存后的图像URL\n- message: 错误信息（仅当status为error时）\n- error_code: 错误代码（仅当status为error时）\n\n可能的错误代码:\n- IMAGE_SIZE_EXCEEDED: 图像过大\n- IMAGE_FORMAT_ERROR: 不支持的图像格式\n- INVALID_IMAGE_DATA: 无效的图像数据\n- INVALID_IMAGE_PATH: 图像路径无效\n- IMAGE_READ_ERROR: 图像读取错误\n- API_ERROR: 图像处理API错误\n- PROCESSING_ERROR: 图像处理失败\n- UNKNOWN_ERROR: 未知错误",
+                "operationId": "process_image_api_v1_image_process_post",
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_process_image_api_v1_image_process_post"
+                            }
                         }
-                    }
-                ],
+                    },
+                    "required": true
+                },
                 "responses": {
                     "200": {
                         "description": "Successful Response",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ExtractResult"
+                                    "$ref": "#/components/schemas/ImageProcessingResponse"
                                 }
                             }
                         }
@@ -1077,22 +1259,27 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "OAuth2PasswordBearer": []
+                    }
+                ]
             }
         },
-        "/api/v1/image/process": {
+        "/api/v1/image/process-answer": {
             "post": {
                 "tags": [
                     "图像处理"
                 ],
-                "summary": "Process Image",
-                "description": "处理错题图像并提取文本\n\n此API仅进行图像处理并返回结果，不会在数据库中创建错题。\n常用于：\n1. 预览图像识别结果\n2. 获取图像文本后由前端进行进一步处理\n3. 作为其他API的基础服务（如/questions/from-image调用了此服务）\n\n处理流程:\n1. 上传并保存图片到服务器\n2. 使用图像处理服务提取文本内容\n3. 返回提取的文本和保存的图片URL\n\n参数:\n- file: 要处理的图像文件\n\n返回:\n- status: 处理状态 (success/error)\n- text: 从图像中提取的文本\n- image_url: 保存后的图像URL\n- message: 错误信息（仅当status为error时）",
-                "operationId": "process_image_api_v1_image_process_post",
+                "summary": "Process Answer Image",
+                "description": "处理错题图像并提取答案文本\n\n此API仅进行图像处理并返回答案部分，不会在数据库中创建错题。\n常用于：\n1. 预览答案识别结果\n2. 获取图像中的答案部分\n\n处理流程:\n1. 上传并保存图片到服务器\n2. 使用图像处理服务提取答案内容\n3. 返回提取的答案文本和保存的图片URL\n\n参数:\n- file: 要处理的图像文件\n\n返回:\n- status: 处理状态 (success/error)\n- text: 从图像中提取的答案文本\n- image_url: 保存后的图像URL\n- message: 错误信息（仅当status为error时）\n- error_code: 错误代码（仅当status为error时）\n\n可能的错误代码:\n- IMAGE_SIZE_EXCEEDED: 图像过大\n- IMAGE_FORMAT_ERROR: 不支持的图像格式\n- INVALID_IMAGE_DATA: 无效的图像数据\n- INVALID_IMAGE_PATH: 图像路径无效\n- IMAGE_READ_ERROR: 图像读取错误\n- API_ERROR: 图像处理API错误\n- PROCESSING_ERROR: 图像处理失败\n- UNKNOWN_ERROR: 未知错误",
+                "operationId": "process_answer_image_api_v1_image_process_answer_post",
                 "requestBody": {
                     "content": {
                         "multipart/form-data": {
                             "schema": {
-                                "$ref": "#/components/schemas/Body_process_image_api_v1_image_process_post"
+                                "$ref": "#/components/schemas/Body_process_answer_image_api_v1_image_process_answer_post"
                             }
                         }
                     },
@@ -1233,6 +1420,20 @@
                 ],
                 "title": "Body_login_for_access_token_api_v1_auth_login_post"
             },
+            "Body_process_answer_image_api_v1_image_process_answer_post": {
+                "properties": {
+                    "file": {
+                        "type": "string",
+                        "format": "binary",
+                        "title": "File"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "file"
+                ],
+                "title": "Body_process_answer_image_api_v1_image_process_answer_post"
+            },
             "Body_process_image_api_v1_image_process_post": {
                 "properties": {
                     "file": {
@@ -1246,42 +1447,6 @@
                     "file"
                 ],
                 "title": "Body_process_image_api_v1_image_process_post"
-            },
-            "ExtractResult": {
-                "properties": {
-                    "status": {
-                        "type": "string",
-                        "title": "Status"
-                    },
-                    "subject_info": {
-                        "type": "object",
-                        "title": "Subject Info"
-                    },
-                    "knowledge_points": {
-                        "items": {
-                            "$ref": "#/components/schemas/KnowledgePoint"
-                        },
-                        "type": "array",
-                        "title": "Knowledge Points"
-                    },
-                    "is_complete": {
-                        "type": "boolean",
-                        "title": "Is Complete"
-                    },
-                    "evaluation": {
-                        "type": "object",
-                        "title": "Evaluation"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "status",
-                    "subject_info",
-                    "knowledge_points",
-                    "is_complete",
-                    "evaluation"
-                ],
-                "title": "ExtractResult"
             },
             "HTTPValidationError": {
                 "properties": {
@@ -1334,6 +1499,17 @@
                             }
                         ],
                         "title": "Message"
+                    },
+                    "error_code": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Error Code"
                     }
                 },
                 "type": "object",
@@ -1342,6 +1518,162 @@
                 ],
                 "title": "ImageProcessingResponse",
                 "description": "图像处理响应模型"
+            },
+            "KnowledgeAnalyzeRequest": {
+                "properties": {
+                    "question_text": {
+                        "type": "string",
+                        "title": "Question Text"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "question_text"
+                ],
+                "title": "KnowledgeAnalyzeRequest"
+            },
+            "KnowledgeAnalyzeResponse": {
+                "properties": {
+                    "categories": {
+                        "items": {
+                            "$ref": "#/components/schemas/KnowledgeCategory"
+                        },
+                        "type": "array",
+                        "title": "Categories"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "categories"
+                ],
+                "title": "KnowledgeAnalyzeResponse"
+            },
+            "KnowledgeCategory": {
+                "properties": {
+                    "subject": {
+                        "type": "string",
+                        "title": "Subject"
+                    },
+                    "chapter": {
+                        "type": "string",
+                        "title": "Chapter"
+                    },
+                    "section": {
+                        "type": "string",
+                        "title": "Section"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "subject",
+                    "chapter",
+                    "section"
+                ],
+                "title": "KnowledgeCategory"
+            },
+            "KnowledgeExtractRequest": {
+                "properties": {
+                    "question_text": {
+                        "type": "string",
+                        "title": "Question Text"
+                    },
+                    "solution_text": {
+                        "type": "string",
+                        "title": "Solution Text"
+                    },
+                    "existing_knowledge_point_ids": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "integer"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Existing Knowledge Point Ids"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "question_text",
+                    "solution_text"
+                ],
+                "title": "KnowledgeExtractRequest"
+            },
+            "KnowledgeExtractResponse": {
+                "properties": {
+                    "existing_knowledge_points": {
+                        "items": {
+                            "$ref": "#/components/schemas/KnowledgePoint"
+                        },
+                        "type": "array",
+                        "title": "Existing Knowledge Points",
+                        "default": []
+                    },
+                    "new_knowledge_points": {
+                        "items": {
+                            "$ref": "#/components/schemas/KnowledgePointInfo"
+                        },
+                        "type": "array",
+                        "title": "New Knowledge Points",
+                        "default": []
+                    }
+                },
+                "type": "object",
+                "title": "KnowledgeExtractResponse"
+            },
+            "KnowledgeMarkRequest": {
+                "properties": {
+                    "question_id": {
+                        "type": "integer",
+                        "title": "Question Id"
+                    },
+                    "existing_knowledge_point_ids": {
+                        "items": {
+                            "type": "integer"
+                        },
+                        "type": "array",
+                        "title": "Existing Knowledge Point Ids",
+                        "default": []
+                    },
+                    "new_knowledge_points": {
+                        "items": {
+                            "$ref": "#/components/schemas/KnowledgePointInfo"
+                        },
+                        "type": "array",
+                        "title": "New Knowledge Points",
+                        "default": []
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "question_id"
+                ],
+                "title": "KnowledgeMarkRequest"
+            },
+            "KnowledgeMarkResponse": {
+                "properties": {
+                    "question_id": {
+                        "type": "integer",
+                        "title": "Question Id"
+                    },
+                    "marked_knowledge_points": {
+                        "items": {
+                            "$ref": "#/components/schemas/KnowledgePoint"
+                        },
+                        "type": "array",
+                        "title": "Marked Knowledge Points"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "question_id",
+                    "marked_knowledge_points"
+                ],
+                "title": "KnowledgeMarkResponse"
             },
             "KnowledgePoint": {
                 "properties": {
@@ -1397,6 +1729,144 @@
                     "created_at"
                 ],
                 "title": "KnowledgePoint"
+            },
+            "KnowledgePointCreate": {
+                "properties": {
+                    "subject": {
+                        "type": "string",
+                        "title": "Subject"
+                    },
+                    "chapter": {
+                        "type": "string",
+                        "title": "Chapter"
+                    },
+                    "section": {
+                        "type": "string",
+                        "title": "Section"
+                    },
+                    "item": {
+                        "type": "string",
+                        "title": "Item"
+                    },
+                    "details": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Details"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "subject",
+                    "chapter",
+                    "section",
+                    "item"
+                ],
+                "title": "KnowledgePointCreate"
+            },
+            "KnowledgePointInfo": {
+                "properties": {
+                    "subject": {
+                        "type": "string",
+                        "title": "Subject"
+                    },
+                    "chapter": {
+                        "type": "string",
+                        "title": "Chapter"
+                    },
+                    "section": {
+                        "type": "string",
+                        "title": "Section"
+                    },
+                    "item": {
+                        "type": "string",
+                        "title": "Item"
+                    },
+                    "details": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Details"
+                    },
+                    "is_existing": {
+                        "type": "boolean",
+                        "title": "Is Existing",
+                        "default": false
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "subject",
+                    "chapter",
+                    "section",
+                    "item"
+                ],
+                "title": "KnowledgePointInfo"
+            },
+            "KnowledgePointInput": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "title": "Id"
+                    },
+                    "subject": {
+                        "type": "string",
+                        "title": "Subject"
+                    },
+                    "chapter": {
+                        "type": "string",
+                        "title": "Chapter"
+                    },
+                    "section": {
+                        "type": "string",
+                        "title": "Section"
+                    },
+                    "item": {
+                        "type": "string",
+                        "title": "Item"
+                    },
+                    "details": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Details"
+                    },
+                    "mark_count": {
+                        "type": "integer",
+                        "title": "Mark Count",
+                        "default": 0
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "default": "2025-04-09T18:13:50.368502"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "subject",
+                    "chapter",
+                    "section",
+                    "item"
+                ],
+                "title": "KnowledgePointInput"
             },
             "Mark": {
                 "properties": {
@@ -1456,6 +1926,17 @@
                         "type": "string",
                         "title": "Content"
                     },
+                    "subject": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Subject"
+                    },
                     "solution": {
                         "anyOf": [
                             {
@@ -1467,7 +1948,7 @@
                         ],
                         "title": "Solution"
                     },
-                    "remarks": {
+                    "answer": {
                         "anyOf": [
                             {
                                 "type": "string"
@@ -1476,7 +1957,18 @@
                                 "type": "null"
                             }
                         ],
-                        "title": "Remarks"
+                        "title": "Answer"
+                    },
+                    "remark": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Remark"
                     },
                     "id": {
                         "type": "integer",
@@ -1518,6 +2010,17 @@
                         "type": "string",
                         "title": "Content"
                     },
+                    "subject": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Subject"
+                    },
                     "solution": {
                         "anyOf": [
                             {
@@ -1529,7 +2032,7 @@
                         ],
                         "title": "Solution"
                     },
-                    "remarks": {
+                    "answer": {
                         "anyOf": [
                             {
                                 "type": "string"
@@ -1538,7 +2041,18 @@
                                 "type": "null"
                             }
                         ],
-                        "title": "Remarks"
+                        "title": "Answer"
+                    },
+                    "remark": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Remark"
                     },
                     "image_url": {
                         "anyOf": [
@@ -1593,6 +2107,17 @@
             },
             "QuestionUpdate": {
                 "properties": {
+                    "subject": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Subject"
+                    },
                     "content": {
                         "anyOf": [
                             {
@@ -1615,7 +2140,7 @@
                         ],
                         "title": "Solution"
                     },
-                    "remarks": {
+                    "answer": {
                         "anyOf": [
                             {
                                 "type": "string"
@@ -1624,7 +2149,18 @@
                                 "type": "null"
                             }
                         ],
-                        "title": "Remarks"
+                        "title": "Answer"
+                    },
+                    "remark": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Remark"
                     },
                     "image_url": {
                         "anyOf": [
@@ -1640,6 +2176,22 @@
                 },
                 "type": "object",
                 "title": "QuestionUpdate"
+            },
+            "SolveRequest": {
+                "properties": {
+                    "knowledge_points": {
+                        "items": {
+                            "$ref": "#/components/schemas/KnowledgePointInput"
+                        },
+                        "type": "array",
+                        "title": "Knowledge Points"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "knowledge_points"
+                ],
+                "title": "SolveRequest"
             },
             "SolveResponse": {
                 "properties": {
