@@ -1,0 +1,116 @@
+### GradNote 前端开发计划 
+
+**技术栈:** React, Axios, Zustand, **TanStack Query (React Query - 服务器状态管理)**, UI 库 (Ant Design)
+
+**核心页面/组件:**
+
+1.  **`SubmissionDashboard` (错题提交页面):**
+    *   主布局，包含侧边栏和内容区。
+    *   管理多个错题提交实例的状态。
+    *   包含图片上传区域 (`ImageUploader`)。
+    *   渲染 `SubmissionRow` 列表。
+2.  **`ImageUploader`:**
+    *   处理文件选择和拖拽上传。
+    *   触发新的 `SubmissionRow` 创建和上传流程。
+3.  **`SubmissionRow` (单行提交流程):**
+    *   展示单个错题的处理流程和状态（从 OCR 开始）。
+    *   包含多个 `StepIndicator` 组件。
+    *   管理该行错题的独立状态 (当前步骤、数据、错误信息等)。
+    *   包含 "详情" 按钮，触发 `DetailsModal`。
+4.  **`StepIndicator` (步骤指示器):**
+    *   显示单个步骤的图标、名称和状态（待处理、处理中、成功、失败）。
+    *   可点击，用于显示该步骤的详细信息或错误原因 (`StepDetailsModal`)。
+    *   处理 OCR、答案步骤的可编辑状态和重启逻辑。
+5.  **`StepDetailsModal` (步骤详情弹窗):**
+    *   显示特定步骤的返回数据或错误信息。
+    *   对于 OCR 和答案步骤，提供编辑功能。
+6.  **`KnowledgePointSelector` (知识点选择器):**
+    *   (在解题流程中使用)
+    *   展示 `analyze-from-question` 和 `search` 返回的知识点。
+    *   允许用户查看、选择用于解题的知识点。
+7.  **`SolutionViewer` (解题过程查看器):**
+    *   (可能在 `StepDetailsModal` 或 `DetailsModal` 中使用)
+    *   展示 `/api/v1/solving/{question_id}` 返回的解题步骤和审查结果。
+8.  **`DetailsModal` (错题详情弹窗):**
+    *   通过 "详情" 按钮触发。
+    *   展示错题的完整信息 (OCR 内容、答案、图片、解题过程等)。
+9.  **`KnowledgeReviewPage` (知识点审核页面):**
+    *   独立页面，展示待审核的知识点列表。
+    *   显示错题的图片、文本和相关知识点列表（分为"已有知识点"和"新知识点"两部分）。
+    *   提供知识点标记功能，允许用户确认或放弃对知识点的标记。
+    *   调用 `/api/v1/knowledge/mark-confirmed` 完成知识点标记。
+
+**状态管理:**
+
+*   **Zustand:** 管理纯粹的客户端 UI 状态（如模态框可见性、表单输入值、全局设置等）以及错题提交实例列表本身。
+    *   **持久化:** 使用 Zustand 的 `persist` 中间件将 **错题提交任务列表** 及其关键 **客户端状态** 保存到 `localStorage`。**具体持久化内容包括：** 每个提交实例的用户界面状态（如进行到哪一步）、关联的 `question_id` (如果已创建)、用户未提交的 OCR 或答案编辑内容、原始图片文件的引用或元数据（以便在刷新后重新显示图片预览，注意避免直接存储大文件）。**不应持久化 TanStack Query 的服务器数据缓存。**
+*   **TanStack Query (React Query):** 管理所有与后端 API 交互相关的服务器状态。包括：
+    *   每个错题提交流程中各个异步步骤（OCR、答案识别、知识点分析、解题等）的加载状态、错误状态、返回数据和缓存。
+    *   自动处理重试、后台同步、数据失效等。
+    *   **错误处理:** 必须在 `useQuery` 和 `useMutation` Hooks 中添加健壮的 `onError` 回调，捕获 API 请求或处理过程中的错误，并将清晰、友好的错误信息展示给用户（例如，在对应的 `StepIndicator` 上显示错误图标，并在 `StepDetailsModal` 中提供详细错误信息）。
+    *   **加载状态:** 必须利用 TanStack Query 提供的状态标志 (如 `isLoading`, `isPending`, `isFetching`)，在界面上（如 `StepIndicator` 或按钮上）为用户提供明确的视觉反馈，告知当前操作正在进行中。
+*   `SubmissionRow` 组件将主要使用 TanStack Query 的 Hooks (`useQuery`, `useMutation`) 来触发 API 调用并获取其状态，而不是在 Zustand 中手动管理这些异步状态。
+
+**API 服务层:**
+
+*   创建 Axios 实例，配置基础 URL 和请求拦截器（注入 Token）。
+*   为 `openapi.json` 中的相关端点创建类型安全的请求函数（这些函数将作为 TanStack Query Hooks 的 `queryFn` 或 `mutationFn`）。
+    *   `image.service.ts`: `processImage`, `processAnswerImage`
+    *   `knowledge.service.ts`: `analyzeFromQuestion`, `searchKnowledgePoints`, `markConfirmedKnowledge`, `getKnowledgePointById` 等。
+    *   `question.service.ts`: `createQuestion`, `getQuestionById`, `updateQuestion`, `deleteQuestion`。
+    *   `solving.service.ts`: `solveQuestion`。
+    *   `auth.service.ts`: `login`, `register`。
+*   TanStack Query 将负责调用这些服务函数，并管理相关的服务器状态和缓存。
+
+**开发步骤:**
+
+1.  **环境搭建与基础组件:**
+    *   初始化 React 项目 (e.g., Vite + React + javaScript)。
+    *   集成 UI 库 (Ant Design)。
+    *   设置 Zustand 和 **TanStack Query** (包括 `QueryClientProvider`)。
+    *   实现基础布局和路由 (包括错题提交页和知识点审核页)。
+    *   实现认证流程 (登录/注册页面 - `POST /api/v1/auth/login`, `POST /api/v1/auth/register`, Token 存储, Axios 拦截器)。
+2.  **错题提交页面 (`SubmissionDashboard`):**
+    *   实现 `ImageUploader` 组件，处理图片选择和基础验证。
+    *   实现 `SubmissionRow` 组件的基本结构和状态管理。
+    *   实现 `StepIndicator` 组件的基本样式和状态显示 (从 OCR 步骤开始)。
+3.  **实现提交流程 - 步骤 1 (OCR):**
+    *   `ImageUploader` 触发上传。在 `SubmissionRow` 中使用 TanStack Query 的 `useMutation` Hook 包装 `image.service.processImage` (**`POST /api/v1/image/process`**) 来处理上传和状态管理 (isLoading, isError, data, error)。
+    *   根据 `useMutation` 返回的状态更新 "OCR" `StepIndicator`（显示加载、成功、失败状态）。
+    *   **成功回调 (`onSuccess`):** 在 OCR 成功后，**立即使用返回的 `text` 和 `image_url` 调用另一个 `useMutation` (包装 `question.service.createQuestion` - **`POST /api/v1/questions/`**) 来创建错题记录**，并将返回的 `question_id` 保存到该 `SubmissionRow` 的 Zustand 状态或 React state 中，用于后续步骤。
+    *   实现 `StepDetailsModal` 显示 OCR 结果 (来自 `useMutation` 的 `data`) 或错误信息 (来自 `error`)。
+    *   实现 OCR 步骤的编辑功能。编辑后使用 `useMutation` 包装 `question.service.updateQuestion` (**`PUT /api/v1/questions/{question_id}`**) (使用已获取的 `question_id`)，并在 `onSuccess` 回调中触发后续 TanStack Query 查询的失效 (invalidate) 来重启流程。
+4.  **实现提交流程 - 步骤 2 (答案识别/编辑):**
+    *   在 OCR 成功（并已创建 `question` 记录）后，在 `SubmissionRow` 中使用 `useMutation` 包装 `image.service.processAnswerImage` (**`POST /api/v1/image/process-answer`**)。
+    *   根据 `useMutation` 状态更新 "是否存在答案" `StepIndicator`。
+    *   允许用户在 `StepDetailsModal` 中查看/编辑答案。
+    *   **编辑/确认答案后:** 使用 `useMutation` 包装 `question.service.updateQuestion` (**`PUT /api/v1/questions/{question_id}`**) (使用已获取的 `question_id`) 将答案更新到后端，并在 `onSuccess` 回调中触发后续查询失效（如果需要）。
+5.  **实现提交流程 - 步骤 3 (知识点检索):**
+    *   在 OCR/答案确认后 (确保 `question` 记录存在且包含必要信息)，使用 `useMutation` 包装 `knowledge.service.analyzeFromQuestion` (**`POST /api/v1/knowledge/analyze-from-question`**) 来触发知识点类别分析。
+    *   在其 `onSuccess` 回调中，使用获取的类别触发另一个 `useQuery` (包装 `knowledge.service.searchKnowledgePoints` - **`GET /api/v1/knowledge/search`**) 来获取具体知识点列表。
+    *   根据查询状态更新 "检索相关知识点" `StepIndicator`。
+    *   实现 `KnowledgePointSelector` 显示 `useQuery` 返回的数据。
+6.  **实现提交流程 - 步骤 4 (解题):**
+    *   使用步骤3检索到的相关知识点和步骤1的错题记录 `question_id` 调用后端 API，使用 `useMutation` 包装 `solving.service.solveQuestion` (**`POST /api/v1/solving/{question_id}`**)。
+    *   根据 `useMutation` 状态更新 "解题" `StepIndicator`。提供加载和错误反馈。
+    *   **处理结果:** `onSuccess` 回调中，处理 `useMutation` 返回的 `data` (`SolveResponse`)，包含解题过程 (`solution`) 和审查结果。
+    *   在 `StepDetailsModal` 或 `DetailsModal` 中实现 `SolutionViewer`，用于展示解题过程 (`solution`) 和审查结果。
+7.  **实现提交流程 - 步骤 5 (返回知识点标记列表):**
+    *   知识点列表分为已存在知识点和新增知识点。已存在知识点已经在步骤3中获取，新增知识点需要调用(**`POST /api/v1/knowledge/extract-from-solution`**)
+    *   在 `SubmissionRow` 或 `StepDetailsModal` 中显示提取到的知识点列表，作为参考信息。
+    *   根据提取结果更新 "返回知识点标记列表" `StepIndicator`。提供加载和错误反馈。
+    *   **完成提交:** 至此，错题提交流程结束。完整的知识点审核和确认将在专门的"知识点审核"页面中进行。
+8.  **实现知识点审核页面 (`KnowledgeReviewPage`):**
+    *   使用 `useQuery` 包装 `question.service.getQuestions` (**`GET /api/v1/questions/`**) 获取用户的错题列表。
+    *   展示每个错题及其已提取的知识点列表（在步骤5中获取的）。如果尚未提取，可以在此页面中触发提取。
+    *   实现知识点显示和标记界面，允许用户逐个确认或放弃对知识点的标记。
+    *   使用 `useMutation` 包装 `knowledge.service.markConfirmedKnowledge` (**`POST /api/v1/knowledge/mark-confirmed`**) 将用户确认的知识点（existing_knowledge_point_ids 和 new_knowledge_points）发送到后端进行标记。
+    *   实现标记状态的视觉反馈和确认功能。
+9.  **实现详情功能:**
+    *   在错题提交页中，实现 `DetailsModal`，聚合展示错题的完整信息 (OCR 文本、答案、图片、解题过程、提取的知识点等)。可以利用 TanStack Query 的缓存数据 (例如调用 **`GET /api/v1/questions/{question_id}`** 获取最新错题信息)。
+    *   在知识点审核页中，允许用户查看完整的错题和解题过程详情。
+10.  **完善与测试:**
+    *   实现完整的流程重启逻辑（主要通过 TanStack Query 的查询失效机制）。
+    *   UI 细节打磨和样式统一。
+    *   全面的错误处理和用户提示（**确保所有 API 调用都有对应的加载和错误状态反馈**）。
+    *   添加单元测试和集成测试。
