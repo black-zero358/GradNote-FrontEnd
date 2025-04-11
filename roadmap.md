@@ -1,3 +1,52 @@
+# GradNote前端重构记录
+
+## 已完成的重构工作
+
+1. **项目架构重构**
+   - 创建了符合新规划的文件夹结构
+   - 建立了基础的配置文件和核心组件
+
+2. **技术栈迁移**
+   - 从React Context API迁移到Zustand状态管理
+   - 从直接使用axios迁移到TanStack Query
+   - 从自定义CSS迁移到Ant Design + styled-components
+
+3. **已重构组件**
+   - 登录页面（LoginPage）
+   - 仪表盘页面（DashboardPage）
+   - 布局组件（AuthLayout, MainLayout）
+   - 图表组件（ChartBox, QuestionsChart, KnowledgeChart）
+
+## 下一步重构计划
+
+1. **功能页面开发**
+   - 完成错题提交页面（SubmissionDashboard）
+   - 完成知识点审核页面（KnowledgeReviewPage）
+
+2. **组件开发**
+   - 完成StepIndicator组件
+   - 完成ImageUploader组件
+   - 完成KnowledgePointSelector组件
+   - 完成SolutionViewer组件
+
+3. **自定义Hook开发**
+   - 开发useImageUpload Hook
+   - 开发useSubmission Hook
+   - 开发useSolving Hook
+
+4. **API服务完善**
+   - 完成question.service.js
+   - 完成image.service.js
+   - 完成knowledge.service.js
+   - 完成solving.service.js
+
+## 下次工作重点
+
+集中开发错题提交相关功能：
+1. 完善API服务层的question.service.js和image.service.js
+2. 开发错题提交所需的组件
+3. 实现错题提交页面的主要功能
+
 ### GradNote 前端开发计划 
 
 **技术栈:** React, Axios, Zustand, **TanStack Query (React Query - 服务器状态管理)**, UI 库 (Ant Design)
