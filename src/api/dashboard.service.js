@@ -1,6 +1,10 @@
 import axiosInstance from './axios.config';
 import { getQuestions } from './question.service';
-import { getPopularKnowledgePoints, getSubjects } from './knowledge.service';
+import { 
+  getPopularKnowledgePoints, 
+  getSubjects, 
+  searchKnowledgePoints 
+} from './knowledge.service';
 import config from '../config';
 
 /**
@@ -11,28 +15,117 @@ import config from '../config';
  * @returns {Promise} - 返回包含错题统计数据的Promise
  */
 export const getQuestionsStats = async (timeRange = 'week', options = {}) => {
-  // 这里示例用getQuestions获取错题列表后手动处理统计
-  // 实际开发可根据后端API情况调整
   try {
+    // 获取错题列表
     const questions = await getQuestions();
     
-    // 处理为需要的统计数据格式
-    // 示例数据结构，实际项目中需要根据真实数据调整
-    const statsData = [
-      { name: '周一', submitted: 4, solved: 2 },
-      { name: '周二', submitted: 6, solved: 4 },
-      { name: '周三', submitted: 3, solved: 1 },
-      { name: '周四', submitted: 5, solved: 3 },
-      { name: '周五', submitted: 7, solved: 5 },
-      { name: '周六', submitted: 2, solved: 1 },
-      { name: '周日', submitted: 3, solved: 2 },
-    ];
+    // 根据timeRange过滤数据
+    const filteredQuestions = filterQuestionsByTimeRange(questions, timeRange);
     
-    return statsData;
+    // 如果有主题筛选，进一步过滤
+    const finalQuestions = options.subject 
+      ? filteredQuestions.filter(q => q.subject === options.subject) 
+      : filteredQuestions;
+    
+    // 生成按日期分组的数据
+    const groupedData = groupQuestionsByDate(finalQuestions, timeRange);
+    
+    return groupedData;
   } catch (error) {
     console.error('获取错题统计数据失败:', error);
     throw error;
   }
+};
+
+/**
+ * 过滤指定时间范围内的错题
+ * @param {Array} questions - 错题列表
+ * @param {string} timeRange - 时间范围
+ * @returns {Array} - 过滤后的错题列表
+ */
+const filterQuestionsByTimeRange = (questions, timeRange) => {
+  const now = new Date();
+  let startDate = new Date();
+  
+  switch(timeRange) {
+    case 'day':
+      startDate.setHours(0, 0, 0, 0);
+      break;
+    case 'week':
+      startDate.setDate(now.getDate() - 7);
+      break;
+    case 'month':
+      startDate.setMonth(now.getMonth() - 1);
+      break;
+    case 'year':
+      startDate.setFullYear(now.getFullYear() - 1);
+      break;
+    default:
+      startDate.setDate(now.getDate() - 7); // 默认一周
+  }
+  
+  return questions.filter(q => new Date(q.created_at) >= startDate);
+};
+
+/**
+ * 将错题按日期分组并统计
+ * @param {Array} questions - 错题列表
+ * @param {string} timeRange - 时间范围
+ * @returns {Array} - 分组后的统计数据
+ */
+const groupQuestionsByDate = (questions, timeRange) => {
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
+  // 确定分组方式
+  let groupBy;
+  let labels;
+  
+  switch(timeRange) {
+    case 'day':
+      groupBy = q => new Date(q.created_at).getHours();
+      labels = Array.from({length: 24}, (_, i) => `${i}时`);
+      break;
+    case 'week':
+      groupBy = q => new Date(q.created_at).getDay();
+      labels = dayNames;
+      break;
+    case 'month':
+      groupBy = q => new Date(q.created_at).getDate();
+      labels = Array.from({length: 31}, (_, i) => `${i+1}日`);
+      break;
+    case 'year':
+      groupBy = q => new Date(q.created_at).getMonth();
+      labels = monthNames;
+      break;
+    default:
+      groupBy = q => new Date(q.created_at).getDay();
+      labels = dayNames;
+  }
+  
+  // 初始化结果数组
+  const result = labels.map((name, index) => ({
+    name,
+    submitted: 0,
+    solved: 0,
+    index: timeRange === 'week' ? index : index // 保持原始索引用于排序
+  }));
+  
+  // 统计数据
+  questions.forEach(q => {
+    const key = groupBy(q);
+    if (result[key]) {
+      result[key].submitted += 1;
+      if (q.solution) {
+        result[key].solved += 1;
+      }
+    }
+  });
+  
+  // 按照索引排序
+  return result.sort((a, b) => a.index - b.index).map(({name, submitted, solved}) => ({
+    name, submitted, solved
+  }));
 };
 
 /**
@@ -45,13 +138,28 @@ export const getQuestionsStats = async (timeRange = 'week', options = {}) => {
  */
 export const getKnowledgeStats = async (timeRange = 'week', options = {}) => {
   try {
-    // 获取热门知识点
-    const popularKnowledgePoints = await getPopularKnowledgePoints(options.limit || 5);
+    // 获取知识点数据
+    let knowledgePoints;
+    
+    if (options.subject) {
+      // 如果指定了科目，使用searchKnowledgePoints按科目查询
+      knowledgePoints = await searchKnowledgePoints({
+        subject: options.subject,
+        sort_by: 'mark_count',
+        limit: options.limit || 5
+      });
+    } else {
+      // 否则获取热门知识点
+      knowledgePoints = await getPopularKnowledgePoints(options.limit || 5);
+    }
     
     // 转换为饼图数据格式
-    const pieData = popularKnowledgePoints.map(point => ({
+    const pieData = knowledgePoints.map(point => ({
       name: point.item,
-      value: point.mark_count
+      value: point.mark_count,
+      id: point.id,
+      subject: point.subject,
+      chapter: point.chapter
     }));
     
     return pieData;
@@ -67,15 +175,18 @@ export const getKnowledgeStats = async (timeRange = 'week', options = {}) => {
  */
 export const getDashboardSummary = async () => {
   try {
-    // 获取问题列表用于统计
-    const questions = await getQuestions();
+    // 获取问题列表和知识点列表
+    const [questions, knowledgePoints] = await Promise.all([
+      getQuestions(),
+      searchKnowledgePoints()
+    ]);
     
-    // 这里示例用本地计算统计，实际开发可根据后端API调整
+    // 计算统计数据
     const summary = {
       totalQuestions: questions.length || 0,
       solvedQuestions: questions.filter(q => q.solution).length || 0,
-      totalKnowledge: 0, // 需要根据实际API获取
-      totalSolutions: 0  // 需要根据实际API获取
+      totalKnowledge: knowledgePoints.length || 0,
+      totalSolutions: questions.filter(q => q.solution).length || 0  // 解题方法数量，这里简化为已解决的题目数
     };
     
     return summary;
@@ -95,8 +206,13 @@ export const getRecentQuestions = async (limit = 5) => {
     // 获取错题列表
     const questions = await getQuestions({ limit });
     
+    // 按创建时间排序（降序）
+    const sortedQuestions = [...questions].sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at)
+    ).slice(0, limit);
+    
     // 格式化为前端需要的格式
-    const recentQuestions = questions.map(q => ({
+    const recentQuestions = sortedQuestions.map(q => ({
       id: q.id,
       title: q.content.substring(0, 30) + (q.content.length > 30 ? '...' : ''),
       subject: q.subject || '未分类',
@@ -145,14 +261,6 @@ export const getSubjectOptions = async () => {
     return options;
   } catch (error) {
     console.error('获取科目列表失败:', error);
-    // 返回默认科目列表，避免UI显示错误
-    return [
-      { value: 'math', label: '数学' },
-      { value: 'physics', label: '物理' },
-      { value: 'chemistry', label: '化学' },
-      { value: 'biology', label: '生物' },
-      { value: 'english', label: '英语' },
-      { value: 'chinese', label: '语文' },
-    ];
+    return []; // 返回空数组，让UI自行处理没有选项的情况
   }
 }; 
