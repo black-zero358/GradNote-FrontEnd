@@ -1,4 +1,5 @@
 import axiosInstance from './axios.config';
+import config from '../config';
 
 /**
  * 基于结构化信息（科目、章节、小节）查询知识点
@@ -10,15 +11,15 @@ import axiosInstance from './axios.config';
 export const getKnowledgePointsByStructure = async (subject, chapter, section) => {
   const params = new URLSearchParams();
   params.append('subject', subject);
-  
+
   if (chapter) {
     params.append('chapter', chapter);
   }
-  
+
   if (section) {
     params.append('section', section);
   }
-  
+
   return axiosInstance.get(`/knowledge/structure?${params.toString()}`);
 };
 
@@ -36,18 +37,18 @@ export const getKnowledgePointsByStructure = async (subject, chapter, section) =
  */
 export const searchKnowledgePoints = async (options = {}) => {
   const { subject, chapter, section, item, sort_by, skip = 0, limit = 100 } = options;
-  
+
   const params = new URLSearchParams();
-  
+
   if (subject) params.append('subject', subject);
   if (chapter) params.append('chapter', chapter);
   if (section) params.append('section', section);
   if (item) params.append('item', item);
   if (sort_by) params.append('sort_by', sort_by);
-  
+
   params.append('skip', skip.toString());
   params.append('limit', limit.toString());
-  
+
   return axiosInstance.get(`/knowledge/search?${params.toString()}`);
 };
 
@@ -87,7 +88,7 @@ export const getSections = async (subject, chapter) => {
   const params = new URLSearchParams();
   params.append('subject', subject);
   params.append('chapter', chapter);
-  
+
   return axiosInstance.get(`/knowledge/sections?${params.toString()}`);
 };
 
@@ -150,6 +151,9 @@ export const createKnowledgePoint = async (data) => {
 export const analyzeKnowledgeFromQuestion = async (questionText) => {
   return axiosInstance.post('/knowledge/analyze-from-question', {
     question_text: questionText
+  }, {
+    // 为调用LLM的API设置更长的超时时间
+    timeout: config.api.llmTimeout
   });
 };
 
@@ -162,7 +166,26 @@ export const analyzeKnowledgeFromQuestion = async (questionText) => {
  * @returns {Promise} - 返回包含提取知识点的Promise
  */
 export const extractKnowledgeFromSolution = async (data) => {
-  return axiosInstance.post('/knowledge/extract-from-solution', data);
+  // 处理existing_knowledge_point_ids，确保它是有效的整数数组
+  const requestData = { ...data };
+
+  // 如果existing_knowledge_point_ids存在但不是数组或为空数组，则删除该字段
+  if (requestData.existing_knowledge_point_ids) {
+    // 过滤掉null、undefined和非数字值
+    requestData.existing_knowledge_point_ids = requestData.existing_knowledge_point_ids
+      .filter(id => id !== null && id !== undefined && !isNaN(Number(id)))
+      .map(id => Number(id));
+
+    // 如果过滤后数组为空，则删除该字段
+    if (requestData.existing_knowledge_point_ids.length === 0) {
+      delete requestData.existing_knowledge_point_ids;
+    }
+  }
+
+  return axiosInstance.post('/knowledge/extract-from-solution', requestData, {
+    // 为调用LLM的API设置更长的超时时间
+    timeout: config.api.llmTimeout
+  });
 };
 
 /**
@@ -175,4 +198,4 @@ export const extractKnowledgeFromSolution = async (data) => {
  */
 export const markConfirmedKnowledgePoints = async (data) => {
   return axiosInstance.post('/knowledge/mark-confirmed', data);
-}; 
+};

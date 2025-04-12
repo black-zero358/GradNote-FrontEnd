@@ -7,13 +7,15 @@ const config = {
     // API基础URL
     baseURL: process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000/api/v1',
     // API请求超时时间（毫秒）
-    timeout: 15000,
+    timeout: 30000, // 默认超时时间增加到30秒
+    // LLM相关API的超时时间（毫秒）
+    llmTimeout: 600000, // LLM相关API超时时间设置为2分钟
     // API路径前缀
     prefix: '',
     // 刷新token的路径
     refreshTokenPath: '/auth/refresh-token',
   },
-  
+
   // 本地存储配置
   storage: {
     // 存储前缀，便于多应用部署区分
@@ -35,4 +37,4 @@ const config = {
   },
 };
 
-export default config; 
+export default config;
