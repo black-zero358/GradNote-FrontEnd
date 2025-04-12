@@ -16,6 +16,8 @@
    - 仪表盘页面（DashboardPage）- 已完成，严格按照UI原型设计实现
    - 布局组件（AuthLayout, MainLayout）
    - 图表组件（ChartBox, QuestionsChart, KnowledgeChart）
+   - 错题提交页面（SubmissionDashboard）- 基本框架已完成
+   - 知识点审核页面（KnowledgeReviewPage）- 基本框架已创建
 
 4. **仪表盘页面重构（DashboardPage）**
    - **使用Zustand状态管理**：
@@ -35,6 +37,22 @@
      - 简化了组件代码，提高了可维护性
      - 实现了科目选项的动态加载
 
+5. **错题提交功能开发**
+   - **组件开发**：
+     - 完成`StepIndicator`组件，支持多种状态显示和交互
+     - 完成`ImageUploader`组件，支持图片上传和验证
+     - 完成`SubmissionRow`组件，展示单个错题的处理流程和状态
+     - 完成`StepDetailsModal`组件，显示步骤详情和编辑功能
+     - 完成`DetailsModal`组件框架，用于展示错题完整信息
+   - **API服务层开发**：
+     - 完成`image.service.js`，实现图片处理相关API
+     - 完成`question.service.js`，实现错题管理相关API
+     - 完成`knowledge.service.js`，实现知识点相关API
+     - 完成`solving.service.js`，实现解题相关API
+   - **自定义Hook开发**：
+     - 完成`useSubmission` Hook，封装错题提交流程的业务逻辑
+     - 实现了完整的错题提交流程状态管理
+
 ## 代码质量优化
 
 根据代码质量审查报告，完成了以下优化工作：
@@ -44,13 +62,15 @@
    - 实现了全局错误处理机制，对不同错误类型给予不同处理
    - 添加了日志记录功能，便于调试和追踪问题
    - 在开发环境添加了查询状态监控功能
+   - 为LLM相关API调用设置了更长的超时时间
 
 2. **API服务层优化**
    - 创建了全局配置文件(config.js)，集中管理API基础URL和其他配置
    - 优化了axios配置，添加了Token自动刷新机制
    - 优化了错误处理，针对不同HTTP状态码给出友好提示
    - 改进了API参数处理，支持更灵活的查询选项
-   - 添加了knowledge.service.js和question.service.js，提供对后端API的规范调用
+   - 完善了所有服务层模块，包括image.service.js、question.service.js、knowledge.service.js和solving.service.js
+   - 添加了参数验证和数据转换逻辑，提高API调用的健壮性
 
 3. **本地存储工具优化**
    - 添加了异常处理，增强了代码健壮性
@@ -64,6 +84,7 @@
    - 添加了类型定义注释，提高代码可读性和安全性
    - 扩展了认证方法，支持刷新Token
    - 新增dashboardStore，实现仪表盘状态管理的集中化
+   - 新增submissionStore，实现错题提交实例的状态管理和持久化
 
 5. **组件优化**
    - 登录页面增加了更细致的错误处理和表单验证，保留了原有视觉风格
@@ -71,29 +92,24 @@
    - 添加了测试ID属性，方便自动化测试
    - 改进了UI交互，如添加科目筛选和更多数据展示
    - 图表组件严格按照设计原型实现，包括颜色、图标和布局
+   - 错题提交组件添加了友好的加载状态和错误处理
 
 ## 下一步重构计划
 
-1. **功能页面开发**
-   - 完成错题提交页面（SubmissionDashboard）
-   - 完成知识点审核页面（KnowledgeReviewPage）
+1. **功能页面完善**
+   - 完善错题提交页面（SubmissionDashboard）的交互逻辑
+   - 完成知识点审核页面（KnowledgeReviewPage）的功能实现
 
 2. **组件开发**
-   - 完成StepIndicator组件
-   - 完成ImageUploader组件
    - 完成KnowledgePointSelector组件
-   - 完成SolutionViewer组件
+   - 完成SolutionViewer组件的完整功能
 
 3. **自定义Hook开发**
-   - 开发useImageUpload Hook
-   - 开发useSubmission Hook
-   - 开发useSolving Hook
+   - 开发useKnowledgeReview Hook，用于知识点审核页面
 
-4. **API服务完善**
-   - 完善question.service.js
-   - 完成image.service.js
-   - 完善knowledge.service.js
-   - 完成solving.service.js
+4. **状态管理优化**
+   - 优化错题提交流程中的状态隔离，确保多个并发提交互不影响
+   - 完善错题提交任务的持久化存储
 
 5. **安全性与测试增强**
    - 实现CSRF保护
@@ -103,14 +119,47 @@
 
 ## 下次工作重点
 
-集中开发错题提交相关功能：
-1. 完善API服务层的question.service.js和image.service.js
-2. 开发错题提交所需的组件
-3. 实现错题提交页面的主要功能
+1. **完善错题提交流程**
+   - 实现KnowledgePointSelector组件，支持用户选择和查看知识点
+   - 完善解题过程展示功能，实现SolutionViewer组件
+   - 优化错题提交流程的用户体验，包括加载状态和错误处理
 
-### GradNote 前端开发计划 
+2. **开发知识点审核页面**
+   - 实现知识点列表展示
+   - 实现知识点标记功能
+   - 实现知识点确认和提交功能
+
+3. **性能优化**
+   - 优化图片上传和处理流程
+   - 实现更高效的状态管理
+   - 添加缓存策略，减少不必要的API调用
+
+### GradNote 前端开发进展总结
 
 **技术栈:** React, Axios, Zustand, **TanStack Query (React Query - 服务器状态管理)**, UI 库 (Ant Design)
+
+**当前完成情况:**
+
+1. **基础架构与配置**
+   - 项目初始化与目录结构搭建已完成
+   - 所有核心依赖已安装并配置
+   - 路由系统已完成配置
+
+2. **核心功能实现**
+   - 登录页面已完成
+   - 仪表盘页面已完成
+   - 错题提交页面基本框架已完成
+   - 知识点审核页面基本框架已创建
+
+3. **API服务层**
+   - 所有核心API服务模块已实现
+   - 已实现错误处理和超时策略
+   - 已实现Token管理和认证机制
+
+4. **状态管理**
+   - 已实现基于Zustand的状态管理
+   - 已实现基于TanStack Query的服务器状态管理
+   - 已实现状态持久化存储
 
 **核心页面/组件:**
 
