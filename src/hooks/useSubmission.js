@@ -164,14 +164,8 @@ const useSubmission = () => {
       // 自动进行下一步 - 解题
       const submission = getSubmission(submissionId);
       if (submission && submission.questionId && data.categories && data.categories.length > 0) {
-        // 获取第一个类别的知识点
-        const category = data.categories[0];
-        searchKnowledgePointsMutation.mutate({
-          subject: category.subject,
-          chapter: category.chapter,
-          section: category.section,
-          submissionId: submissionId
-        });
+        // 处理所有类别的知识点
+        processAllCategories(data.categories, submissionId, submission.questionId);
       }
     },
     onError: (error, variables) => {
@@ -181,14 +175,86 @@ const useSubmission = () => {
     }
   });
 
-  // 搜索知识点mutation
+  // 处理所有知识点类别
+  const processAllCategories = async (categories, submissionId, questionId) => {
+    try {
+      // 更新步骤状态为处理中
+      updateSubmissionStep(submissionId, 'knowledge', STEP_STATUS.PROCESSING, null, null);
+      message.info('正在搜索所有相关知识点，这可能需要一些时间...');
+
+      // 存储所有知识点ID
+      let allKnowledgePointIds = [];
+
+      // 为每个类别搜索知识点
+      for (const category of categories) {
+        try {
+          const searchResult = await searchKnowledgePoints({
+            subject: category.subject,
+            chapter: category.chapter,
+            section: category.section
+          });
+
+          // 收集知识点ID
+          const categoryKnowledgePointIds = searchResult.map(point => point.id);
+          allKnowledgePointIds = [...allKnowledgePointIds, ...categoryKnowledgePointIds];
+        } catch (error) {
+          console.error(`搜索知识点失败 (${category.subject} > ${category.chapter} > ${category.section}):`, error);
+        }
+      }
+
+      // 去重
+      allKnowledgePointIds = [...new Set(allKnowledgePointIds)];
+
+      // 保存所有搜索到的知识点ID到submission中
+      updateSubmissionStep(submissionId, 'knowledge', STEP_STATUS.SUCCESS, {
+        categories,
+        allKnowledgePointIds
+      });
+
+      // 如果找到了知识点，进行解题
+      if (allKnowledgePointIds.length > 0) {
+        solveMutation.mutate({
+          questionId: questionId,
+          knowledgePoints: allKnowledgePointIds,
+          submissionId: submissionId
+        });
+      } else {
+        // 如果没有知识点，标记解题步骤为失败
+        updateSubmissionStep(submissionId, 'solving', STEP_STATUS.FAILED, null, {
+          message: '未找到相关知识点，无法解题'
+        });
+      }
+    } catch (error) {
+      // 更新步骤状态为失败
+      updateSubmissionStep(submissionId, 'knowledge', STEP_STATUS.FAILED, null, error);
+      message.error('处理知识点类别失败: ' + (error.message || '未知错误'));
+    }
+  };
+
+  // 搜索知识点mutation - 用于单个类别的搜索（主要用于重试功能）
   const searchKnowledgePointsMutation = useMutation({
-    mutationFn: ({ subject, chapter, section, submissionId }) => {
+    mutationFn: ({ subject, chapter, section, submissionId, categories }) => {
+      // 如果提供了categories数组，则处理所有类别
+      if (categories && Array.isArray(categories) && categories.length > 0) {
+        return Promise.resolve({ categories, submissionId });
+      }
+      // 否则只处理单个类别
       return searchKnowledgePoints({ subject, chapter, section })
-        .then(data => ({ data, submissionId }));
+        .then(data => ({ data, submissionId, singleCategory: true }));
     },
     onSuccess: (result) => {
-      const { data, submissionId } = result;
+      const { data, submissionId, singleCategory, categories } = result;
+
+      // 如果是处理所有类别
+      if (!singleCategory && categories) {
+        const submission = getSubmission(submissionId);
+        if (submission && submission.questionId) {
+          processAllCategories(categories, submissionId, submission.questionId);
+        }
+        return;
+      }
+
+      // 单个类别的处理逻辑
       // 获取知识点ID列表
       const knowledgePointIds = data.map(point => point.id);
 
@@ -245,11 +311,22 @@ const useSubmission = () => {
               .map(point => Number(point.id));
           }
 
-          // 如果没有从solving.data获取到，则尝试从knowledge.categories获取
+          // 如果没有从solving.data获取到，则尝试从knowledge.allKnowledgePointIds 获取
           if (knowledgePointIds.length === 0) {
-            knowledgePointIds = submission.data?.knowledge?.categories
-              ?.filter(c => c && c.id !== undefined && c.id !== null)
-              ?.map(c => Number(c.id)) || [];
+            // 首先尝试从 allKnowledgePointIds 获取（新增的字段）
+            if (submission.data?.knowledge?.allKnowledgePointIds &&
+                Array.isArray(submission.data.knowledge.allKnowledgePointIds) &&
+                submission.data.knowledge.allKnowledgePointIds.length > 0) {
+              knowledgePointIds = submission.data.knowledge.allKnowledgePointIds
+                .filter(id => id !== undefined && id !== null)
+                .map(id => Number(id));
+            }
+            // 如果还是没有，则尝试从categories获取
+            else if (submission.data?.knowledge?.categories) {
+              knowledgePointIds = submission.data.knowledge.categories
+                ?.filter(c => c && c.id !== undefined && c.id !== null)
+                ?.map(c => Number(c.id)) || [];
+            }
           }
 
           extractKnowledgeMutation.mutate({
@@ -427,12 +504,9 @@ const useSubmission = () => {
       case 'solving':
         const knowledgeData = submission?.data?.knowledge;
         if (submission.questionId && knowledgeData && knowledgeData.categories) {
-          // 获取第一个类别的知识点
-          const category = knowledgeData.categories[0];
+          // 处理所有类别
           searchKnowledgePointsMutation.mutate({
-            subject: category.subject,
-            chapter: category.chapter,
-            section: category.section,
+            categories: knowledgeData.categories,
             submissionId: currentSubmissionId
           });
         }
@@ -454,11 +528,22 @@ const useSubmission = () => {
               .map(point => Number(point.id));
           }
 
-          // 如果没有从solving.data获取到，则尝试从knowledge.categories获取
-          if (knowledgePointIds.length === 0 && submission?.data?.knowledge?.categories) {
-            knowledgePointIds = submission.data.knowledge.categories
-              .filter(point => point && point.id !== undefined && point.id !== null)
-              .map(point => Number(point.id)) || [];
+          // 如果没有从solving.data获取到，则尝试从knowledge.allKnowledgePointIds 获取
+          if (knowledgePointIds.length === 0) {
+            // 首先尝试从 allKnowledgePointIds 获取（新增的字段）
+            if (submission.data?.knowledge?.allKnowledgePointIds &&
+                Array.isArray(submission.data.knowledge.allKnowledgePointIds) &&
+                submission.data.knowledge.allKnowledgePointIds.length > 0) {
+              knowledgePointIds = submission.data.knowledge.allKnowledgePointIds
+                .filter(id => id !== undefined && id !== null)
+                .map(id => Number(id));
+            }
+            // 如果还是没有，则尝试从categories获取
+            else if (submission.data?.knowledge?.categories) {
+              knowledgePointIds = submission.data.knowledge.categories
+                .filter(point => point && point.id !== undefined && point.id !== null)
+                .map(point => Number(point.id)) || [];
+            }
           }
 
           extractKnowledgeMutation.mutate({
