@@ -311,13 +311,31 @@ const KnowledgeReviewPage = () => {
   const renderConfirmedKnowledgePoints = (submission) => {
     // 尝试从 localStorage 中获取最新的知识点数据
     let knowledgeMarksData;
+    let confirmedKnowledgePointsData = {};
+
     try {
       const storageKey = 'gradnote-submissions';
       const storageData = JSON.parse(localStorage.getItem(storageKey));
       if (storageData && storageData.state && storageData.state.submissions) {
         const storageSubmission = storageData.state.submissions.find(s => s.id === submission.id);
-        if (storageSubmission && storageSubmission.data && storageSubmission.data.knowledgeMarks) {
-          knowledgeMarksData = storageSubmission.data.knowledgeMarks;
+        if (storageSubmission && storageSubmission.data) {
+          if (storageSubmission.data.knowledgeMarks) {
+            knowledgeMarksData = storageSubmission.data.knowledgeMarks;
+          }
+
+          // 从提交数据中获取已确认的知识点状态
+          if (storageSubmission.data.confirmedKnowledgePoints) {
+            confirmedKnowledgePointsData = storageSubmission.data.confirmedKnowledgePoints;
+          }
+        }
+      }
+
+      // 如果在提交数据中没有找到已确认的知识点状态，尝试从全局审核状态中获取
+      if (Object.keys(confirmedKnowledgePointsData).length === 0) {
+        const reviewStateKey = 'gradnote-knowledge-review-state';
+        const reviewStateData = JSON.parse(localStorage.getItem(reviewStateKey));
+        if (reviewStateData && reviewStateData.confirmedKnowledgePoints) {
+          confirmedKnowledgePointsData = reviewStateData.confirmedKnowledgePoints;
         }
       }
     } catch (error) {
@@ -330,13 +348,19 @@ const KnowledgeReviewPage = () => {
       knowledgeMarksData = data.knowledgeMarks || {};
     }
 
+    // 自定义函数检查知识点是否已确认，优先使用从 localStorage 中获取的状态
+    const isPointConfirmed = (submissionId, pointId, isExisting) => {
+      const key = `${submissionId}_${pointId}_${isExisting ? 'existing' : 'new'}`;
+      return !!confirmedKnowledgePointsData[key] || isKnowledgePointConfirmed(submissionId, pointId, isExisting);
+    };
+
     // 过滤出已确认的知识点
     const confirmedExistingPoints = knowledgeMarksData.existing_knowledge_points
-      ?.filter(point => isKnowledgePointConfirmed(submission.id, point.id, true))
+      ?.filter(point => isPointConfirmed(submission.id, point.id, true))
       || [];
 
     const confirmedNewPoints = knowledgeMarksData.new_knowledge_points
-      ?.filter(point => isKnowledgePointConfirmed(submission.id, point.item, false))
+      ?.filter(point => isPointConfirmed(submission.id, point.item, false))
       || [];
 
     if (confirmedExistingPoints.length === 0 && confirmedNewPoints.length === 0) {

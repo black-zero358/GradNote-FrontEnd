@@ -20,6 +20,25 @@ const useKnowledgeReview = () => {
   const [confirmedKnowledgePoints, setConfirmedKnowledgePoints] = useState({});
   const [rejectedKnowledgePoints, setRejectedKnowledgePoints] = useState({});
 
+  // 从localStorage加载已确认和已拒绝的知识点
+  useEffect(() => {
+    try {
+      const storageKey = 'gradnote-knowledge-review-state';
+      const storedState = localStorage.getItem(storageKey);
+      if (storedState) {
+        const parsedState = JSON.parse(storedState);
+        if (parsedState.confirmedKnowledgePoints) {
+          setConfirmedKnowledgePoints(parsedState.confirmedKnowledgePoints);
+        }
+        if (parsedState.rejectedKnowledgePoints) {
+          setRejectedKnowledgePoints(parsedState.rejectedKnowledgePoints);
+        }
+      }
+    } catch (error) {
+      console.error('从 localStorage 加载知识点审核状态失败', error);
+    }
+  }, []);
+
   // 初始化时过滤出包含知识点的提交
   useEffect(() => {
     const filteredSubmissions = submissions.filter(submission => {
@@ -43,35 +62,62 @@ const useKnowledgeReview = () => {
     setSubmissionsWithKnowledge(filteredSubmissions);
   }, [submissions]);
 
+  // 保存知识点审核状态到localStorage
+  const saveReviewStateToLocalStorage = useCallback((confirmed, rejected) => {
+    try {
+      const storageKey = 'gradnote-knowledge-review-state';
+      localStorage.setItem(storageKey, JSON.stringify({
+        confirmedKnowledgePoints: confirmed,
+        rejectedKnowledgePoints: rejected
+      }));
+    } catch (error) {
+      console.error('保存知识点审核状态到 localStorage 失败', error);
+    }
+  }, []);
+
   // 确认知识点
   const confirmKnowledgePoint = useCallback((submissionId, knowledgePointId, isExisting = true) => {
-    setConfirmedKnowledgePoints(prev => ({
-      ...prev,
-      [`${submissionId}_${knowledgePointId}_${isExisting ? 'existing' : 'new'}`]: true
-    }));
+    setConfirmedKnowledgePoints(prev => {
+      const newState = {
+        ...prev,
+        [`${submissionId}_${knowledgePointId}_${isExisting ? 'existing' : 'new'}`]: true
+      };
+      // 保存到localStorage
+      saveReviewStateToLocalStorage(newState, rejectedKnowledgePoints);
+      return newState;
+    });
 
     // 如果之前被拒绝，则移除拒绝状态
     setRejectedKnowledgePoints(prev => {
       const newState = { ...prev };
       delete newState[`${submissionId}_${knowledgePointId}_${isExisting ? 'existing' : 'new'}`];
+      // 保存到localStorage
+      saveReviewStateToLocalStorage(confirmedKnowledgePoints, newState);
       return newState;
     });
-  }, []);
+  }, [confirmedKnowledgePoints, rejectedKnowledgePoints, saveReviewStateToLocalStorage]);
 
   // 拒绝知识点
   const rejectKnowledgePoint = useCallback((submissionId, knowledgePointId, isExisting = true) => {
-    setRejectedKnowledgePoints(prev => ({
-      ...prev,
-      [`${submissionId}_${knowledgePointId}_${isExisting ? 'existing' : 'new'}`]: true
-    }));
+    setRejectedKnowledgePoints(prev => {
+      const newState = {
+        ...prev,
+        [`${submissionId}_${knowledgePointId}_${isExisting ? 'existing' : 'new'}`]: true
+      };
+      // 保存到localStorage
+      saveReviewStateToLocalStorage(confirmedKnowledgePoints, newState);
+      return newState;
+    });
 
     // 如果之前被确认，则移除确认状态
     setConfirmedKnowledgePoints(prev => {
       const newState = { ...prev };
       delete newState[`${submissionId}_${knowledgePointId}_${isExisting ? 'existing' : 'new'}`];
+      // 保存到localStorage
+      saveReviewStateToLocalStorage(newState, rejectedKnowledgePoints);
       return newState;
     });
-  }, []);
+  }, [confirmedKnowledgePoints, rejectedKnowledgePoints, saveReviewStateToLocalStorage]);
 
   // 检查知识点是否已确认
   const isKnowledgePointConfirmed = useCallback((submissionId, knowledgePointId, isExisting = true) => {
@@ -88,18 +134,22 @@ const useKnowledgeReview = () => {
     setConfirmedKnowledgePoints(prev => {
       const newState = { ...prev };
       delete newState[`${submissionId}_${knowledgePointId}_${isExisting ? 'existing' : 'new'}`];
+      // 保存到localStorage
+      saveReviewStateToLocalStorage(newState, rejectedKnowledgePoints);
       return newState;
     });
-  }, []);
+  }, [rejectedKnowledgePoints, saveReviewStateToLocalStorage]);
 
   // 取消拒绝知识点
   const cancelRejectKnowledgePoint = useCallback((submissionId, knowledgePointId, isExisting = true) => {
     setRejectedKnowledgePoints(prev => {
       const newState = { ...prev };
       delete newState[`${submissionId}_${knowledgePointId}_${isExisting ? 'existing' : 'new'}`];
+      // 保存到localStorage
+      saveReviewStateToLocalStorage(confirmedKnowledgePoints, newState);
       return newState;
     });
-  }, []);
+  }, [confirmedKnowledgePoints, saveReviewStateToLocalStorage]);
 
   // 编辑知识点
   const editKnowledgePoint = useCallback((submissionId, knowledgePointId, updatedKnowledgePoint, isExisting = true) => {
@@ -276,34 +326,28 @@ const useKnowledgeReview = () => {
         const currentSubmissionIndex = currentStorageData.state.submissions.findIndex(s => s.id === submissionId);
         if (currentSubmissionIndex !== -1) {
           // 保存当前的知识点数据
-          const currentSubmissionData = currentStorageData.state.submissions[currentSubmissionIndex];
+          const currentSubmissionData = { ...currentStorageData.state.submissions[currentSubmissionIndex] };
+
+          // 确保知识点数据包含已确认的知识点
+          if (currentSubmissionData.data && currentSubmissionData.data.knowledgeMarks) {
+            // 将已确认的知识点状态保存到submission数据中
+            // 这样即使页面刷新，也能知道哪些知识点已确认
+            currentSubmissionData.data.confirmedKnowledgePoints = {};
+
+            // 为当前submission保存已确认的知识点
+            Object.keys(confirmedKnowledgePoints).forEach(key => {
+              if (key.startsWith(`${submissionId}_`)) {
+                currentSubmissionData.data.confirmedKnowledgePoints[key] = true;
+              }
+            });
+
+            // 更新submission数据
+            currentStorageData.state.submissions[currentSubmissionIndex] = currentSubmissionData;
+            localStorage.setItem(storageKey, JSON.stringify(currentStorageData));
+          }
 
           // 更新审核状态
           updateReviewStatus(submissionId, REVIEW_STATUS.REVIEWED);
-
-          // 重新获取更新后的数据
-          setTimeout(() => {
-            try {
-              const updatedStorageData = JSON.parse(localStorage.getItem(storageKey));
-              if (updatedStorageData && updatedStorageData.state && updatedStorageData.state.submissions) {
-                const updatedSubmissionIndex = updatedStorageData.state.submissions.findIndex(s => s.id === submissionId);
-                if (updatedSubmissionIndex !== -1) {
-                  // 将知识点数据从当前数据复制到更新后的数据中
-                  if (currentSubmissionData.data && currentSubmissionData.data.knowledgeMarks) {
-                    updatedStorageData.state.submissions[updatedSubmissionIndex].data = {
-                      ...updatedStorageData.state.submissions[updatedSubmissionIndex].data,
-                      knowledgeMarks: currentSubmissionData.data.knowledgeMarks
-                    };
-
-                    // 将更新后的数据保存回 localStorage
-                    localStorage.setItem(storageKey, JSON.stringify(updatedStorageData));
-                  }
-                }
-              }
-            } catch (error) {
-              console.error('保存知识点数据失败', error);
-            }
-          }, 100); // 等待一小段时间确保 updateReviewStatus 已完成
         } else {
           // 如果找不到当前提交，直接更新审核状态
           updateReviewStatus(submissionId, REVIEW_STATUS.REVIEWED);
