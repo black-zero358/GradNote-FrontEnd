@@ -55,6 +55,8 @@ const KnowledgeReviewPage = () => {
     submissionsWithKnowledge,
     confirmKnowledgePoint,
     rejectKnowledgePoint,
+    cancelConfirmKnowledgePoint,
+    cancelRejectKnowledgePoint,
     isKnowledgePointConfirmed,
     isKnowledgePointRejected,
     submitConfirmedKnowledgePoints
@@ -82,6 +84,20 @@ const KnowledgeReviewPage = () => {
   const handleRejectKnowledgePoint = (knowledgePointId, isExisting = true) => {
     if (currentSubmission) {
       rejectKnowledgePoint(currentSubmission.id, knowledgePointId, isExisting);
+    }
+  };
+
+  // 处理取消确认知识点
+  const handleCancelConfirmKnowledgePoint = (knowledgePointId, isExisting = true) => {
+    if (currentSubmission) {
+      cancelConfirmKnowledgePoint(currentSubmission.id, knowledgePointId, isExisting);
+    }
+  };
+
+  // 处理取消拒绝知识点
+  const handleCancelRejectKnowledgePoint = (knowledgePointId, isExisting = true) => {
+    if (currentSubmission) {
+      cancelRejectKnowledgePoint(currentSubmission.id, knowledgePointId, isExisting);
     }
   };
 
@@ -114,6 +130,8 @@ const KnowledgeReviewPage = () => {
               isRejected={isKnowledgePointRejected(currentSubmission.id, pointId, isExisting)}
               onConfirm={() => handleConfirmKnowledgePoint(pointId, isExisting)}
               onReject={() => handleRejectKnowledgePoint(pointId, isExisting)}
+              onCancelConfirm={() => handleCancelConfirmKnowledgePoint(pointId, isExisting)}
+              onCancelReject={() => handleCancelRejectKnowledgePoint(pointId, isExisting)}
             />
           );
         })}
@@ -203,7 +221,7 @@ const KnowledgeReviewPage = () => {
               onChange={handleTabChange}
               type="card"
             >
-              {submissionsWithKnowledge.map((submission, index) => (
+              {submissionsWithKnowledge.map((_, index) => (
                 <TabPane tab={`错题 ${index + 1}`} key={index}>
                   {renderSubmissionContent()}
                 </TabPane>

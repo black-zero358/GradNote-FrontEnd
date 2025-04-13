@@ -51,14 +51,18 @@ const RejectButton = styled(Button)`
  * @param {boolean} props.isRejected - 是否已拒绝
  * @param {Function} props.onConfirm - 确认回调
  * @param {Function} props.onReject - 拒绝回调
+ * @param {Function} props.onCancelConfirm - 取消确认回调
+ * @param {Function} props.onCancelReject - 取消拒绝回调
  * @returns {JSX.Element}
  */
-const KnowledgePointItem = ({ 
-  knowledgePoint, 
-  isConfirmed, 
-  isRejected, 
-  onConfirm, 
-  onReject 
+const KnowledgePointItem = ({
+  knowledgePoint,
+  isConfirmed,
+  isRejected,
+  onConfirm,
+  onReject,
+  onCancelConfirm,
+  onCancelReject
 }) => {
   // 根据知识点类型构建显示文本
   const getKnowledgePointText = () => {
@@ -74,42 +78,44 @@ const KnowledgePointItem = ({
       <KnowledgePointText>
         {getKnowledgePointText()}
       </KnowledgePointText>
-      
+
       <ActionButtons>
         {isConfirmed ? (
-          <Tooltip title="确定标记">
-            <Button 
-              type="primary" 
-              shape="circle" 
-              icon={<CheckCircleOutlined />} 
+          <Tooltip title="点击取消标记">
+            <Button
+              type="primary"
+              shape="circle"
+              icon={<CheckCircleOutlined />}
               style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+              onClick={onCancelConfirm}
             />
           </Tooltip>
         ) : (
           <Tooltip title="标记">
-            <ConfirmButton 
-              shape="circle" 
-              icon={<CheckCircleOutlined />} 
+            <ConfirmButton
+              shape="circle"
+              icon={<CheckCircleOutlined />}
               onClick={onConfirm}
               disabled={isRejected}
             />
           </Tooltip>
         )}
-        
+
         {isRejected ? (
-          <Tooltip title="已放弃标记">
-            <Button 
-              type="primary" 
-              danger 
-              shape="circle" 
-              icon={<CloseCircleOutlined />} 
+          <Tooltip title="点击取消放弃">
+            <Button
+              type="primary"
+              danger
+              shape="circle"
+              icon={<CloseCircleOutlined />}
+              onClick={onCancelReject}
             />
           </Tooltip>
         ) : (
           <Tooltip title="放弃标记">
-            <RejectButton 
-              shape="circle" 
-              icon={<CloseCircleOutlined />} 
+            <RejectButton
+              shape="circle"
+              icon={<CloseCircleOutlined />}
               onClick={onReject}
               disabled={isConfirmed}
             />

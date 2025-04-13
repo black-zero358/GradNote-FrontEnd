@@ -10,12 +10,12 @@ import { markConfirmedKnowledgePoints } from '../api/knowledge.service';
 const useKnowledgeReview = () => {
   // 从store获取提交列表
   const { submissions, getSubmission } = useSubmissionStore();
-  
+
   // 本地状态
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [submissionsWithKnowledge, setSubmissionsWithKnowledge] = useState([]);
-  
+
   // 已确认和已拒绝的知识点ID映射
   const [confirmedKnowledgePoints, setConfirmedKnowledgePoints] = useState({});
   const [rejectedKnowledgePoints, setRejectedKnowledgePoints] = useState({});
@@ -25,17 +25,17 @@ const useKnowledgeReview = () => {
     const filteredSubmissions = submissions.filter(submission => {
       // 检查是否有knowledgeMarks数据
       return (
-        submission.data && 
-        submission.data.knowledgeMarks && 
+        submission.data &&
+        submission.data.knowledgeMarks &&
         (
-          (submission.data.knowledgeMarks.existing_knowledge_points && 
+          (submission.data.knowledgeMarks.existing_knowledge_points &&
            submission.data.knowledgeMarks.existing_knowledge_points.length > 0) ||
-          (submission.data.knowledgeMarks.new_knowledge_points && 
+          (submission.data.knowledgeMarks.new_knowledge_points &&
            submission.data.knowledgeMarks.new_knowledge_points.length > 0)
         )
       );
     });
-    
+
     setSubmissionsWithKnowledge(filteredSubmissions);
   }, [submissions]);
 
@@ -45,7 +45,7 @@ const useKnowledgeReview = () => {
       ...prev,
       [`${submissionId}_${knowledgePointId}_${isExisting ? 'existing' : 'new'}`]: true
     }));
-    
+
     // 如果之前被拒绝，则移除拒绝状态
     setRejectedKnowledgePoints(prev => {
       const newState = { ...prev };
@@ -60,7 +60,7 @@ const useKnowledgeReview = () => {
       ...prev,
       [`${submissionId}_${knowledgePointId}_${isExisting ? 'existing' : 'new'}`]: true
     }));
-    
+
     // 如果之前被确认，则移除确认状态
     setConfirmedKnowledgePoints(prev => {
       const newState = { ...prev };
@@ -78,6 +78,24 @@ const useKnowledgeReview = () => {
   const isKnowledgePointRejected = useCallback((submissionId, knowledgePointId, isExisting = true) => {
     return !!rejectedKnowledgePoints[`${submissionId}_${knowledgePointId}_${isExisting ? 'existing' : 'new'}`];
   }, [rejectedKnowledgePoints]);
+
+  // 取消确认知识点
+  const cancelConfirmKnowledgePoint = useCallback((submissionId, knowledgePointId, isExisting = true) => {
+    setConfirmedKnowledgePoints(prev => {
+      const newState = { ...prev };
+      delete newState[`${submissionId}_${knowledgePointId}_${isExisting ? 'existing' : 'new'}`];
+      return newState;
+    });
+  }, []);
+
+  // 取消拒绝知识点
+  const cancelRejectKnowledgePoint = useCallback((submissionId, knowledgePointId, isExisting = true) => {
+    setRejectedKnowledgePoints(prev => {
+      const newState = { ...prev };
+      delete newState[`${submissionId}_${knowledgePointId}_${isExisting ? 'existing' : 'new'}`];
+      return newState;
+    });
+  }, []);
 
   // 提交确认的知识点
   const submitConfirmedKnowledgePoints = useCallback(async (submissionId) => {
@@ -128,10 +146,12 @@ const useKnowledgeReview = () => {
     loading,
     error,
     submissionsWithKnowledge,
-    
+
     // 方法
     confirmKnowledgePoint,
     rejectKnowledgePoint,
+    cancelConfirmKnowledgePoint,
+    cancelRejectKnowledgePoint,
     isKnowledgePointConfirmed,
     isKnowledgePointRejected,
     submitConfirmedKnowledgePoints
