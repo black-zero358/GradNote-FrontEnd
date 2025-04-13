@@ -9,7 +9,7 @@ import { markConfirmedKnowledgePoints } from '../api/knowledge.service';
  */
 const useKnowledgeReview = () => {
   // 从store获取提交列表
-  const { submissions, getSubmission, updateReviewStatus } = useSubmissionStore();
+  const { submissions, getSubmission, updateReviewStatus, updateSubmissionStep } = useSubmissionStore();
 
   // 本地状态
   const [loading, setLoading] = useState(false);
@@ -19,9 +19,6 @@ const useKnowledgeReview = () => {
   // 已确认和已拒绝的知识点ID映射
   const [confirmedKnowledgePoints, setConfirmedKnowledgePoints] = useState({});
   const [rejectedKnowledgePoints, setRejectedKnowledgePoints] = useState({});
-
-  // 已编辑的知识点映射
-  const [editedKnowledgePoints, setEditedKnowledgePoints] = useState({});
 
   // 初始化时过滤出包含知识点的提交
   useEffect(() => {
@@ -106,13 +103,6 @@ const useKnowledgeReview = () => {
 
   // 编辑知识点
   const editKnowledgePoint = useCallback((submissionId, knowledgePointId, updatedKnowledgePoint, isExisting = true) => {
-    const key = `${submissionId}_${knowledgePointId}_${isExisting ? 'existing' : 'new'}`;
-
-    setEditedKnowledgePoints(prev => ({
-      ...prev,
-      [key]: updatedKnowledgePoint
-    }));
-
     // 更新提交中的知识点数据
     setSubmissionsWithKnowledge(prev => {
       return prev.map(submission => {
@@ -144,8 +134,80 @@ const useKnowledgeReview = () => {
       });
     });
 
-    message.success('知识点编辑成功');
-  }, []);
+    // 直接更新 Zustand store 中的数据
+    try {
+      // 获取当前提交的数据
+      const submission = getSubmission(submissionId);
+      if (submission && submission.data && submission.data.knowledgeMarks) {
+        const knowledgeMarks = { ...submission.data.knowledgeMarks };
+
+        if (isExisting && knowledgeMarks.existing_knowledge_points) {
+          // 更新已有知识点
+          knowledgeMarks.existing_knowledge_points = knowledgeMarks.existing_knowledge_points.map(point => {
+            if (point.id === knowledgePointId) {
+              return { ...point, ...updatedKnowledgePoint };
+            }
+            return point;
+          });
+        } else if (!isExisting && knowledgeMarks.new_knowledge_points) {
+          // 更新新知识点
+          knowledgeMarks.new_knowledge_points = knowledgeMarks.new_knowledge_points.map(point => {
+            if (point.item === knowledgePointId) {
+              return { ...point, ...updatedKnowledgePoint };
+            }
+            return point;
+          });
+        }
+
+        // 直接更新 Zustand store
+        updateSubmissionStep(submissionId, 'knowledgeMarks', submission.steps.knowledgeMarks, knowledgeMarks);
+      }
+
+      // 直接更新localStorage中的数据
+      const storageKey = 'gradnote-submissions';
+      const storageData = JSON.parse(localStorage.getItem(storageKey));
+
+      if (storageData && storageData.state && storageData.state.submissions) {
+        // 找到对应的submission
+        const submissions = storageData.state.submissions;
+        const submissionIndex = submissions.findIndex(s => s.id === submissionId);
+
+        if (submissionIndex !== -1) {
+          const submission = submissions[submissionIndex];
+
+          // 确保数据结构存在
+          if (submission.data && submission.data.knowledgeMarks) {
+            const knowledgeMarks = submission.data.knowledgeMarks;
+
+            if (isExisting && knowledgeMarks.existing_knowledge_points) {
+              // 更新已有知识点
+              knowledgeMarks.existing_knowledge_points = knowledgeMarks.existing_knowledge_points.map(point => {
+                if (point.id === knowledgePointId) {
+                  return { ...point, ...updatedKnowledgePoint };
+                }
+                return point;
+              });
+            } else if (!isExisting && knowledgeMarks.new_knowledge_points) {
+              // 更新新知识点
+              knowledgeMarks.new_knowledge_points = knowledgeMarks.new_knowledge_points.map(point => {
+                if (point.item === knowledgePointId) {
+                  return { ...point, ...updatedKnowledgePoint };
+                }
+                return point;
+              });
+            }
+
+            // 更新localStorage
+            localStorage.setItem(storageKey, JSON.stringify(storageData));
+          }
+        }
+      }
+      message.success('知识点编辑成功');
+    } catch (error) {
+      console.error('更新知识点数据失败', error);
+      message.error('知识点编辑失败: ' + (error.message || '未知错误'));
+    }
+  }, [getSubmission, updateSubmissionStep]);
 
   // 提交确认的知识点
   const submitConfirmedKnowledgePoints = useCallback(async (submissionId) => {
@@ -159,14 +221,27 @@ const useKnowledgeReview = () => {
       setLoading(true);
       setError(null);
 
-      // 获取当前提交中的知识点数据
-      const currentSubmission = submissionsWithKnowledge.find(s => s.id === submissionId);
-      if (!currentSubmission) {
-        message.error('无法找到相关知识点信息');
-        return;
+      // 直接从 localStorage 中获取最新的知识点数据
+      const storageKey = 'gradnote-submissions';
+      const storageData = JSON.parse(localStorage.getItem(storageKey));
+      let knowledgeMarksData;
+
+      if (storageData && storageData.state && storageData.state.submissions) {
+        const storageSubmission = storageData.state.submissions.find(s => s.id === submissionId);
+        if (storageSubmission && storageSubmission.data && storageSubmission.data.knowledgeMarks) {
+          knowledgeMarksData = storageSubmission.data.knowledgeMarks;
+        }
       }
 
-      const knowledgeMarksData = currentSubmission.data.knowledgeMarks;
+      // 如果从 localStorage 中无法获取数据，则使用内存中的数据
+      if (!knowledgeMarksData) {
+        const currentSubmission = submissionsWithKnowledge.find(s => s.id === submissionId);
+        if (!currentSubmission) {
+          message.error('无法找到相关知识点信息');
+          return;
+        }
+        knowledgeMarksData = currentSubmission.data.knowledgeMarks;
+      }
 
       // 准备已有知识点ID列表
       const existingKnowledgePointIds = knowledgeMarksData.existing_knowledge_points
@@ -177,19 +252,13 @@ const useKnowledgeReview = () => {
       const newKnowledgePoints = knowledgeMarksData.new_knowledge_points
         .filter(point => isKnowledgePointConfirmed(submissionId, point.item, false))
         .map(point => {
-          // 检查是否有编辑过的知识点
-          const editedKey = `${submissionId}_${point.item}_new`;
-          const editedPoint = editedKnowledgePoints[editedKey];
-
-          // 使用编辑过的知识点数据或原始数据
-          const finalPoint = editedPoint || point;
-
+          // 使用已经在 localStorage 中更新过的数据
           return {
-            subject: finalPoint.subject,
-            chapter: finalPoint.chapter,
-            section: finalPoint.section,
-            item: finalPoint.item,
-            details: finalPoint.details || null
+            subject: point.subject,
+            chapter: point.chapter,
+            section: point.section,
+            item: point.item,
+            details: point.details || null
           };
         });
 
@@ -201,7 +270,48 @@ const useKnowledgeReview = () => {
       });
 
       // 更新审核状态为已审核
-      updateReviewStatus(submissionId, REVIEW_STATUS.REVIEWED);
+      // 先保存当前的知识点数据
+      const currentStorageData = JSON.parse(localStorage.getItem(storageKey));
+      if (currentStorageData && currentStorageData.state && currentStorageData.state.submissions) {
+        const currentSubmissionIndex = currentStorageData.state.submissions.findIndex(s => s.id === submissionId);
+        if (currentSubmissionIndex !== -1) {
+          // 保存当前的知识点数据
+          const currentSubmissionData = currentStorageData.state.submissions[currentSubmissionIndex];
+
+          // 更新审核状态
+          updateReviewStatus(submissionId, REVIEW_STATUS.REVIEWED);
+
+          // 重新获取更新后的数据
+          setTimeout(() => {
+            try {
+              const updatedStorageData = JSON.parse(localStorage.getItem(storageKey));
+              if (updatedStorageData && updatedStorageData.state && updatedStorageData.state.submissions) {
+                const updatedSubmissionIndex = updatedStorageData.state.submissions.findIndex(s => s.id === submissionId);
+                if (updatedSubmissionIndex !== -1) {
+                  // 将知识点数据从当前数据复制到更新后的数据中
+                  if (currentSubmissionData.data && currentSubmissionData.data.knowledgeMarks) {
+                    updatedStorageData.state.submissions[updatedSubmissionIndex].data = {
+                      ...updatedStorageData.state.submissions[updatedSubmissionIndex].data,
+                      knowledgeMarks: currentSubmissionData.data.knowledgeMarks
+                    };
+
+                    // 将更新后的数据保存回 localStorage
+                    localStorage.setItem(storageKey, JSON.stringify(updatedStorageData));
+                  }
+                }
+              }
+            } catch (error) {
+              console.error('保存知识点数据失败', error);
+            }
+          }, 100); // 等待一小段时间确保 updateReviewStatus 已完成
+        } else {
+          // 如果找不到当前提交，直接更新审核状态
+          updateReviewStatus(submissionId, REVIEW_STATUS.REVIEWED);
+        }
+      } else {
+        // 如果无法获取 localStorage 数据，直接更新审核状态
+        updateReviewStatus(submissionId, REVIEW_STATUS.REVIEWED);
+      }
 
       message.success('知识点标记成功');
     } catch (err) {
@@ -210,7 +320,7 @@ const useKnowledgeReview = () => {
     } finally {
       setLoading(false);
     }
-  }, [getSubmission, isKnowledgePointConfirmed, submissionsWithKnowledge, editedKnowledgePoints, updateReviewStatus]);
+  }, [getSubmission, isKnowledgePointConfirmed, submissionsWithKnowledge, updateReviewStatus]);
 
   // 开始审核
   const startReview = useCallback((submissionId) => {

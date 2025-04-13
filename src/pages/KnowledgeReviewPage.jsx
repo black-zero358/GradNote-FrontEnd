@@ -192,7 +192,26 @@ const KnowledgeReviewPage = () => {
 
     const { data } = currentSubmission;
     const ocrData = data.ocr || {};
-    const knowledgeMarksData = data.knowledgeMarks || {};
+
+    // 尝试从 localStorage 中获取最新的知识点数据
+    let knowledgeMarksData;
+    try {
+      const storageKey = 'gradnote-submissions';
+      const storageData = JSON.parse(localStorage.getItem(storageKey));
+      if (storageData && storageData.state && storageData.state.submissions) {
+        const storageSubmission = storageData.state.submissions.find(s => s.id === currentSubmission.id);
+        if (storageSubmission && storageSubmission.data && storageSubmission.data.knowledgeMarks) {
+          knowledgeMarksData = storageSubmission.data.knowledgeMarks;
+        }
+      }
+    } catch (error) {
+      console.error('从 localStorage 获取知识点数据失败', error);
+    }
+
+    // 如果从 localStorage 中无法获取数据，则使用内存中的数据
+    if (!knowledgeMarksData) {
+      knowledgeMarksData = data.knowledgeMarks || {};
+    }
 
     return (
       <div>
@@ -239,8 +258,26 @@ const KnowledgeReviewPage = () => {
       );
     }
 
-    const { data } = currentSubmission;
-    const ocrData = data.ocr || {};
+    // 尝试从 localStorage 中获取最新的数据
+    let ocrData;
+    try {
+      const storageKey = 'gradnote-submissions';
+      const storageData = JSON.parse(localStorage.getItem(storageKey));
+      if (storageData && storageData.state && storageData.state.submissions) {
+        const storageSubmission = storageData.state.submissions.find(s => s.id === currentSubmission.id);
+        if (storageSubmission && storageSubmission.data && storageSubmission.data.ocr) {
+          ocrData = storageSubmission.data.ocr;
+        }
+      }
+    } catch (error) {
+      console.error('从 localStorage 获取 OCR 数据失败', error);
+    }
+
+    // 如果从 localStorage 中无法获取数据，则使用内存中的数据
+    if (!ocrData) {
+      const { data } = currentSubmission;
+      ocrData = data.ocr || {};
+    }
 
     return (
       <div>
@@ -272,8 +309,26 @@ const KnowledgeReviewPage = () => {
 
   // 渲染已确认的知识点
   const renderConfirmedKnowledgePoints = (submission) => {
-    const { data } = submission;
-    const knowledgeMarksData = data.knowledgeMarks || {};
+    // 尝试从 localStorage 中获取最新的知识点数据
+    let knowledgeMarksData;
+    try {
+      const storageKey = 'gradnote-submissions';
+      const storageData = JSON.parse(localStorage.getItem(storageKey));
+      if (storageData && storageData.state && storageData.state.submissions) {
+        const storageSubmission = storageData.state.submissions.find(s => s.id === submission.id);
+        if (storageSubmission && storageSubmission.data && storageSubmission.data.knowledgeMarks) {
+          knowledgeMarksData = storageSubmission.data.knowledgeMarks;
+        }
+      }
+    } catch (error) {
+      console.error('从 localStorage 获取知识点数据失败', error);
+    }
+
+    // 如果从 localStorage 中无法获取数据，则使用内存中的数据
+    if (!knowledgeMarksData) {
+      const { data } = submission;
+      knowledgeMarksData = data.knowledgeMarks || {};
+    }
 
     // 过滤出已确认的知识点
     const confirmedExistingPoints = knowledgeMarksData.existing_knowledge_points
