@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, Typography, Button, Tabs, Empty, Spin, Alert } from 'antd';
 import styled from 'styled-components';
 import useKnowledgeReview from '../hooks/useKnowledgeReview';
 import KnowledgePointItem from '../components/knowledge/KnowledgePointItem';
 import QuestionPreview from '../components/knowledge/QuestionPreview';
+import { REVIEW_STATUS } from '../stores/submissionStore';
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -60,16 +61,42 @@ const KnowledgeReviewPage = () => {
     isKnowledgePointConfirmed,
     isKnowledgePointRejected,
     editKnowledgePoint,
-    submitConfirmedKnowledgePoints
+    submitConfirmedKnowledgePoints,
+    startReReview
   } = useKnowledgeReview();
+
+  // 当前选中的主标签页（待审核/已审核）
+  const [activeMainTab, setActiveMainTab] = useState('pending');
 
   // 当前选中的提交索引
   const [currentSubmissionIndex, setCurrentSubmissionIndex] = useState(0);
 
-  // 获取当前选中的提交
-  const currentSubmission = submissionsWithKnowledge[currentSubmissionIndex];
+  // 按审核状态过滤提交
+  const pendingReviewSubmissions = useMemo(() => {
+    return submissionsWithKnowledge.filter(submission =>
+      submission.reviewStatus === REVIEW_STATUS.PENDING_REVIEW ||
+      submission.reviewStatus === REVIEW_STATUS.REVIEWING
+    );
+  }, [submissionsWithKnowledge]);
 
-  // 处理标签页切换
+  const reviewedSubmissions = useMemo(() => {
+    return submissionsWithKnowledge.filter(submission =>
+      submission.reviewStatus === REVIEW_STATUS.REVIEWED
+    );
+  }, [submissionsWithKnowledge]);
+
+  // 获取当前选中的提交
+  const currentSubmission = activeMainTab === 'pending'
+    ? pendingReviewSubmissions[currentSubmissionIndex]
+    : reviewedSubmissions[currentSubmissionIndex];
+
+  // 处理主标签页切换（待审核/已审核）
+  const handleMainTabChange = (activeKey) => {
+    setActiveMainTab(activeKey);
+    setCurrentSubmissionIndex(0); // 重置当前选中的提交索引
+  };
+
+  // 处理子标签页切换（错题列表）
   const handleTabChange = (activeKey) => {
     setCurrentSubmissionIndex(Number(activeKey));
   };
@@ -116,6 +143,11 @@ const KnowledgeReviewPage = () => {
     }
   };
 
+  // 处理重新审核
+  const handleReReview = (submissionId) => {
+    startReReview(submissionId);
+  };
+
   // 渲染知识点列表
   const renderKnowledgePoints = (knowledgePoints, isExisting = true) => {
     if (!knowledgePoints || knowledgePoints.length === 0) {
@@ -148,8 +180,8 @@ const KnowledgeReviewPage = () => {
     );
   };
 
-  // 渲染提交内容
-  const renderSubmissionContent = () => {
+  // 渲染待审核的提交内容
+  const renderPendingSubmissionContent = () => {
     if (!currentSubmission) {
       return (
         <EmptyContainer>
@@ -197,6 +229,108 @@ const KnowledgeReviewPage = () => {
     );
   };
 
+  // 渲染已审核的提交内容
+  const renderReviewedSubmissionContent = () => {
+    if (!currentSubmission) {
+      return (
+        <EmptyContainer>
+          <Empty description="暂无已审核的知识点" />
+        </EmptyContainer>
+      );
+    }
+
+    const { data } = currentSubmission;
+    const ocrData = data.ocr || {};
+
+    return (
+      <div>
+        {/* 题目预览 */}
+        <QuestionPreview
+          imageUrl={currentSubmission.imageUrl}
+          questionText={ocrData.text}
+          rowNumber={currentSubmissionIndex + 1}
+        />
+
+        {/* 已确认的知识点 */}
+        <KnowledgeSection>
+          <SectionTitle>已确认的知识点</SectionTitle>
+          {renderConfirmedKnowledgePoints(currentSubmission)}
+        </KnowledgeSection>
+
+        {/* 操作按钮 */}
+        <ActionContainer>
+          <Button
+            type="primary"
+            onClick={() => handleReReview(currentSubmission.id)}
+          >
+            重新审核
+          </Button>
+        </ActionContainer>
+      </div>
+    );
+  };
+
+  // 渲染已确认的知识点
+  const renderConfirmedKnowledgePoints = (submission) => {
+    const { data } = submission;
+    const knowledgeMarksData = data.knowledgeMarks || {};
+
+    // 过滤出已确认的知识点
+    const confirmedExistingPoints = knowledgeMarksData.existing_knowledge_points
+      ?.filter(point => isKnowledgePointConfirmed(submission.id, point.id, true))
+      || [];
+
+    const confirmedNewPoints = knowledgeMarksData.new_knowledge_points
+      ?.filter(point => isKnowledgePointConfirmed(submission.id, point.item, false))
+      || [];
+
+    if (confirmedExistingPoints.length === 0 && confirmedNewPoints.length === 0) {
+      return (
+        <EmptyContainer>
+          <Empty description="无已确认的知识点" />
+        </EmptyContainer>
+      );
+    }
+
+    return (
+      <>
+        {confirmedExistingPoints.length > 0 && (
+          <div>
+            <div style={{ marginBottom: '8px' }}>已有知识点:</div>
+            <KnowledgeList>
+              {confirmedExistingPoints.map((point, index) => (
+                <KnowledgePointItem
+                  key={`existing-${index}`}
+                  knowledgePoint={point}
+                  isConfirmed={true}
+                  isRejected={false}
+                  readOnly={true}
+                />
+              ))}
+            </KnowledgeList>
+          </div>
+        )}
+
+        {confirmedNewPoints.length > 0 && (
+          <div>
+            <div style={{ marginBottom: '8px', marginTop: '16px' }}>新知识点:</div>
+            <KnowledgeList>
+              {confirmedNewPoints.map((point, index) => (
+                <KnowledgePointItem
+                  key={`new-${index}`}
+                  knowledgePoint={point}
+                  isConfirmed={true}
+                  isRejected={false}
+                  readOnly={true}
+                />
+              ))}
+            </KnowledgeList>
+          </div>
+        )}
+      </>
+    );
+  };
+
   return (
     <PageContainer>
       <Title level={2}>知识点审核</Title>
@@ -224,25 +358,52 @@ const KnowledgeReviewPage = () => {
         </StyledCard>
       ) : (
         <>
-          {submissionsWithKnowledge.length > 0 ? (
-            <Tabs
-              activeKey={currentSubmissionIndex.toString()}
-              onChange={handleTabChange}
-              type="card"
-            >
-              {submissionsWithKnowledge.map((_, index) => (
-                <TabPane tab={`错题 ${index + 1}`} key={index}>
-                  {renderSubmissionContent()}
-                </TabPane>
-              ))}
-            </Tabs>
-          ) : (
-            <StyledCard>
-              <EmptyContainer>
-                <Empty description="暂无需要审核的知识点" />
-              </EmptyContainer>
-            </StyledCard>
-          )}
+          {/* 主标签页：待审核/已审核 */}
+          <Tabs activeKey={activeMainTab} onChange={handleMainTabChange}>
+            <TabPane tab="待审核" key="pending">
+              {pendingReviewSubmissions.length > 0 ? (
+                <Tabs
+                  activeKey={currentSubmissionIndex.toString()}
+                  onChange={handleTabChange}
+                  type="card"
+                >
+                  {pendingReviewSubmissions.map((_, index) => (
+                    <TabPane tab={`错题 ${index + 1}`} key={index}>
+                      {renderPendingSubmissionContent()}
+                    </TabPane>
+                  ))}
+                </Tabs>
+              ) : (
+                <StyledCard>
+                  <EmptyContainer>
+                    <Empty description="暂无需要审核的知识点" />
+                  </EmptyContainer>
+                </StyledCard>
+              )}
+            </TabPane>
+
+            <TabPane tab="已审核" key="reviewed">
+              {reviewedSubmissions.length > 0 ? (
+                <Tabs
+                  activeKey={currentSubmissionIndex.toString()}
+                  onChange={handleTabChange}
+                  type="card"
+                >
+                  {reviewedSubmissions.map((_, index) => (
+                    <TabPane tab={`错题 ${index + 1}`} key={index}>
+                      {renderReviewedSubmissionContent()}
+                    </TabPane>
+                  ))}
+                </Tabs>
+              ) : (
+                <StyledCard>
+                  <EmptyContainer>
+                    <Empty description="暂无已审核的知识点" />
+                  </EmptyContainer>
+                </StyledCard>
+              )}
+            </TabPane>
+          </Tabs>
         </>
       )}
     </PageContainer>

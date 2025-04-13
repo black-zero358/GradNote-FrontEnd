@@ -55,6 +55,7 @@ const RejectButton = styled(Button)`
  * @param {Function} props.onCancelConfirm - 取消确认回调
  * @param {Function} props.onCancelReject - 取消拒绝回调
  * @param {Function} props.onEdit - 编辑知识点回调
+ * @param {boolean} props.readOnly - 是否只读模式，不显示操作按钮
  * @returns {JSX.Element}
  */
 const KnowledgePointItem = ({
@@ -65,7 +66,8 @@ const KnowledgePointItem = ({
   onReject,
   onCancelConfirm,
   onCancelReject,
-  onEdit
+  onEdit,
+  readOnly = false
 }) => {
   const [isModalVisible, setIsModalVisible] = React.useState(false);
   // 不需要单独的状态变量，直接使用 form 管理编辑状态
@@ -120,58 +122,60 @@ const KnowledgePointItem = ({
         {getKnowledgePointFullText()}
       </KnowledgePointText>
 
-      <ActionButtons>
-        <Tooltip title="编辑知识点">
-          <Button
-            shape="circle"
-            icon={<EditOutlined />}
-            style={{ marginRight: 8 }}
-            onClick={showEditModal}
-          />
-        </Tooltip>
-
-        {isConfirmed ? (
-          <Tooltip title="点击取消标记">
+      {!readOnly && (
+        <ActionButtons>
+          <Tooltip title="编辑知识点">
             <Button
-              type="primary"
               shape="circle"
-              icon={<CheckCircleOutlined />}
-              style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-              onClick={onCancelConfirm}
+              icon={<EditOutlined />}
+              style={{ marginRight: 8 }}
+              onClick={showEditModal}
             />
           </Tooltip>
-        ) : (
-          <Tooltip title="标记">
-            <ConfirmButton
-              shape="circle"
-              icon={<CheckCircleOutlined />}
-              onClick={onConfirm}
-              disabled={isRejected}
-            />
-          </Tooltip>
-        )}
 
-        {isRejected ? (
-          <Tooltip title="点击取消放弃">
-            <Button
-              type="primary"
-              danger
-              shape="circle"
-              icon={<CloseCircleOutlined />}
-              onClick={onCancelReject}
-            />
-          </Tooltip>
-        ) : (
-          <Tooltip title="放弃标记">
-            <RejectButton
-              shape="circle"
-              icon={<CloseCircleOutlined />}
-              onClick={onReject}
-              disabled={isConfirmed}
-            />
-          </Tooltip>
-        )}
-      </ActionButtons>
+          {isConfirmed ? (
+            <Tooltip title="点击取消标记">
+              <Button
+                type="primary"
+                shape="circle"
+                icon={<CheckCircleOutlined />}
+                style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+                onClick={onCancelConfirm}
+              />
+            </Tooltip>
+          ) : (
+            <Tooltip title="标记">
+              <ConfirmButton
+                shape="circle"
+                icon={<CheckCircleOutlined />}
+                onClick={onConfirm}
+                disabled={isRejected}
+              />
+            </Tooltip>
+          )}
+
+          {isRejected ? (
+            <Tooltip title="点击取消放弃">
+              <Button
+                type="primary"
+                danger
+                shape="circle"
+                icon={<CloseCircleOutlined />}
+                onClick={onCancelReject}
+              />
+            </Tooltip>
+          ) : (
+            <Tooltip title="放弃标记">
+              <RejectButton
+                shape="circle"
+                icon={<CloseCircleOutlined />}
+                onClick={onReject}
+                disabled={isConfirmed}
+              />
+            </Tooltip>
+          )}
+        </ActionButtons>
+      )}
 
       <Modal
         title="编辑知识点"

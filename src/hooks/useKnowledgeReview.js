@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { message } from 'antd';
-import useSubmissionStore from '../stores/submissionStore';
+import useSubmissionStore, { REVIEW_STATUS } from '../stores/submissionStore';
 import { markConfirmedKnowledgePoints } from '../api/knowledge.service';
 
 /**
@@ -9,7 +9,7 @@ import { markConfirmedKnowledgePoints } from '../api/knowledge.service';
  */
 const useKnowledgeReview = () => {
   // 从store获取提交列表
-  const { submissions, getSubmission } = useSubmissionStore();
+  const { submissions, getSubmission, updateReviewStatus } = useSubmissionStore();
 
   // 本地状态
   const [loading, setLoading] = useState(false);
@@ -26,7 +26,7 @@ const useKnowledgeReview = () => {
   // 初始化时过滤出包含知识点的提交
   useEffect(() => {
     const filteredSubmissions = submissions.filter(submission => {
-      // 检查是否有knowledgeMarks数据
+      // 检查是否有knowledgeMarks数据且已完成解题流程
       return (
         submission.data &&
         submission.data.knowledgeMarks &&
@@ -35,7 +35,11 @@ const useKnowledgeReview = () => {
            submission.data.knowledgeMarks.existing_knowledge_points.length > 0) ||
           (submission.data.knowledgeMarks.new_knowledge_points &&
            submission.data.knowledgeMarks.new_knowledge_points.length > 0)
-        )
+        ) &&
+        // 只包含待审核或正在审核或已审核的提交
+        (submission.reviewStatus === REVIEW_STATUS.PENDING_REVIEW ||
+         submission.reviewStatus === REVIEW_STATUS.REVIEWING ||
+         submission.reviewStatus === REVIEW_STATUS.REVIEWED)
       );
     });
 
@@ -196,6 +200,9 @@ const useKnowledgeReview = () => {
         new_knowledge_points: newKnowledgePoints
       });
 
+      // 更新审核状态为已审核
+      updateReviewStatus(submissionId, REVIEW_STATUS.REVIEWED);
+
       message.success('知识点标记成功');
     } catch (err) {
       setError(err.message || '标记知识点时发生错误');
@@ -203,7 +210,17 @@ const useKnowledgeReview = () => {
     } finally {
       setLoading(false);
     }
-  }, [getSubmission, isKnowledgePointConfirmed, submissionsWithKnowledge, editedKnowledgePoints]);
+  }, [getSubmission, isKnowledgePointConfirmed, submissionsWithKnowledge, editedKnowledgePoints, updateReviewStatus]);
+
+  // 开始审核
+  const startReview = useCallback((submissionId) => {
+    updateReviewStatus(submissionId, REVIEW_STATUS.REVIEWING);
+  }, [updateReviewStatus]);
+
+  // 开始重新审核
+  const startReReview = useCallback((submissionId) => {
+    updateReviewStatus(submissionId, REVIEW_STATUS.REVIEWING);
+  }, [updateReviewStatus]);
 
   return {
     // 状态
@@ -219,7 +236,9 @@ const useKnowledgeReview = () => {
     isKnowledgePointConfirmed,
     isKnowledgePointRejected,
     editKnowledgePoint,
-    submitConfirmedKnowledgePoints
+    submitConfirmedKnowledgePoints,
+    startReview,
+    startReReview
   };
 };
 

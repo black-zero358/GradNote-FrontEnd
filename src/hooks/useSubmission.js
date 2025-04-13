@@ -9,7 +9,7 @@ import {
   extractKnowledgeFromSolution
 } from '../api/knowledge.service';
 import { solveQuestion } from '../api/solving.service';
-import useSubmissionStore from '../stores/submissionStore';
+import useSubmissionStore, { REVIEW_STATUS } from '../stores/submissionStore';
 import { STEP_STATUS } from '../components/common/StepIndicator';
 
 /**
@@ -30,7 +30,8 @@ const useSubmission = () => {
     setQuestionId,
     getSubmission,
     updateOcrText,
-    updateAnswerText
+    updateAnswerText,
+    updateReviewStatus
   } = useSubmissionStore();
 
   // OCR处理mutation
@@ -287,6 +288,10 @@ const useSubmission = () => {
       const { data, submissionId } = result;
       // 更新步骤状态为成功
       updateSubmissionStep(submissionId, 'knowledgeMarks', STEP_STATUS.SUCCESS, data);
+
+      // 设置审核状态为待审核
+      updateReviewStatus(submissionId, REVIEW_STATUS.PENDING_REVIEW);
+
       message.success('错题提交流程完成');
     },
     onError: (error, variables) => {
