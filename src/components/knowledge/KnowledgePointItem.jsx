@@ -1,21 +1,22 @@
 import React from 'react';
-import { Typography, Button, Space, Tooltip } from 'antd';
+import { Button, Tooltip } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
 
-const { Text } = Typography;
+// 不需要从Typography导入组件
 
 const KnowledgePointContainer = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
+  align-items: flex-start;
+  padding: 12px 0;
   border-bottom: 1px solid #f0f0f0;
 `;
 
-const KnowledgePointText = styled(Text)`
+const KnowledgePointText = styled.div`
   flex: 1;
   margin-right: 16px;
+  white-space: pre-wrap;
 `;
 
 const ActionButtons = styled.div`
@@ -64,19 +65,25 @@ const KnowledgePointItem = ({
   onCancelConfirm,
   onCancelReject
 }) => {
-  // 根据知识点类型构建显示文本
-  const getKnowledgePointText = () => {
+  // 构建知识点完整文本
+  const getKnowledgePointFullText = () => {
+    let text = `${knowledgePoint.subject} > ${knowledgePoint.chapter} > ${knowledgePoint.section}`;
+
     if (knowledgePoint.item) {
-      return `${knowledgePoint.subject} > ${knowledgePoint.chapter} > ${knowledgePoint.section} > ${knowledgePoint.item}`;
-    } else {
-      return `${knowledgePoint.subject} > ${knowledgePoint.chapter} > ${knowledgePoint.section}`;
+      text += ` > ${knowledgePoint.item}`;
     }
+
+    if (knowledgePoint.details) {
+      text += `\n\n${knowledgePoint.details}`;
+    }
+
+    return text;
   };
 
   return (
     <KnowledgePointContainer>
       <KnowledgePointText>
-        {getKnowledgePointText()}
+        {getKnowledgePointFullText()}
       </KnowledgePointText>
 
       <ActionButtons>
