@@ -59,6 +59,7 @@ const KnowledgeReviewPage = () => {
     cancelRejectKnowledgePoint,
     isKnowledgePointConfirmed,
     isKnowledgePointRejected,
+    editKnowledgePoint,
     submitConfirmedKnowledgePoints
   } = useKnowledgeReview();
 
@@ -101,6 +102,13 @@ const KnowledgeReviewPage = () => {
     }
   };
 
+  // 处理编辑知识点
+  const handleEditKnowledgePoint = (knowledgePointId, updatedKnowledgePoint, isExisting = true) => {
+    if (currentSubmission) {
+      editKnowledgePoint(currentSubmission.id, knowledgePointId, updatedKnowledgePoint, isExisting);
+    }
+  };
+
   // 处理提交确认的知识点
   const handleSubmit = () => {
     if (currentSubmission) {
@@ -132,6 +140,7 @@ const KnowledgeReviewPage = () => {
               onReject={() => handleRejectKnowledgePoint(pointId, isExisting)}
               onCancelConfirm={() => handleCancelConfirmKnowledgePoint(pointId, isExisting)}
               onCancelReject={() => handleCancelRejectKnowledgePoint(pointId, isExisting)}
+              onEdit={(updatedKnowledgePoint) => handleEditKnowledgePoint(pointId, updatedKnowledgePoint, isExisting)}
             />
           );
         })}

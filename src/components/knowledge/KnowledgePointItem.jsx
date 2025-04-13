@@ -1,6 +1,6 @@
 import React from 'react';
-import { Button, Tooltip } from 'antd';
-import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { Button, Tooltip, Modal, Input, Form } from 'antd';
+import { CheckCircleOutlined, CloseCircleOutlined, EditOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
 
 // 不需要从Typography导入组件
@@ -54,6 +54,7 @@ const RejectButton = styled(Button)`
  * @param {Function} props.onReject - 拒绝回调
  * @param {Function} props.onCancelConfirm - 取消确认回调
  * @param {Function} props.onCancelReject - 取消拒绝回调
+ * @param {Function} props.onEdit - 编辑知识点回调
  * @returns {JSX.Element}
  */
 const KnowledgePointItem = ({
@@ -63,8 +64,41 @@ const KnowledgePointItem = ({
   onConfirm,
   onReject,
   onCancelConfirm,
-  onCancelReject
+  onCancelReject,
+  onEdit
 }) => {
+  const [isModalVisible, setIsModalVisible] = React.useState(false);
+  // 不需要单独的状态变量，直接使用 form 管理编辑状态
+  const [form] = Form.useForm();
+  // 打开编辑模态框
+  const showEditModal = () => {
+    form.setFieldsValue({
+      subject: knowledgePoint.subject,
+      chapter: knowledgePoint.chapter,
+      section: knowledgePoint.section,
+      item: knowledgePoint.item || '',
+      details: knowledgePoint.details || ''
+    });
+    setIsModalVisible(true);
+  };
+
+  // 关闭模态框
+  const handleCancel = () => {
+    setIsModalVisible(false);
+  };
+
+  // 保存编辑的知识点
+  const handleOk = () => {
+    form.validateFields().then(values => {
+      const updatedKnowledgePoint = {
+        ...knowledgePoint,
+        ...values
+      };
+      onEdit(updatedKnowledgePoint);
+      setIsModalVisible(false);
+    });
+  };
+
   // 构建知识点完整文本
   const getKnowledgePointFullText = () => {
     let text = `${knowledgePoint.subject} > ${knowledgePoint.chapter} > ${knowledgePoint.section}`;
@@ -87,6 +121,15 @@ const KnowledgePointItem = ({
       </KnowledgePointText>
 
       <ActionButtons>
+        <Tooltip title="编辑知识点">
+          <Button
+            shape="circle"
+            icon={<EditOutlined />}
+            style={{ marginRight: 8 }}
+            onClick={showEditModal}
+          />
+        </Tooltip>
+
         {isConfirmed ? (
           <Tooltip title="点击取消标记">
             <Button
@@ -129,6 +172,60 @@ const KnowledgePointItem = ({
           </Tooltip>
         )}
       </ActionButtons>
+
+      <Modal
+        title="编辑知识点"
+        open={isModalVisible}
+        onOk={handleOk}
+        onCancel={handleCancel}
+        destroyOnClose
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={{
+            subject: knowledgePoint.subject,
+            chapter: knowledgePoint.chapter,
+            section: knowledgePoint.section,
+            item: knowledgePoint.item || '',
+            details: knowledgePoint.details || ''
+          }}
+        >
+          <Form.Item
+            name="subject"
+            label="科目"
+            rules={[{ required: true, message: '请输入科目' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="chapter"
+            label="章节"
+            rules={[{ required: true, message: '请输入章节' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="section"
+            label="小节"
+            rules={[{ required: true, message: '请输入小节' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="item"
+            label="条目"
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="details"
+            label="详细描述"
+          >
+            <Input.TextArea rows={4} />
+          </Form.Item>
+        </Form>
+      </Modal>
     </KnowledgePointContainer>
   );
 };

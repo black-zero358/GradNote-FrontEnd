@@ -20,6 +20,9 @@ const useKnowledgeReview = () => {
   const [confirmedKnowledgePoints, setConfirmedKnowledgePoints] = useState({});
   const [rejectedKnowledgePoints, setRejectedKnowledgePoints] = useState({});
 
+  // 已编辑的知识点映射
+  const [editedKnowledgePoints, setEditedKnowledgePoints] = useState({});
+
   // 初始化时过滤出包含知识点的提交
   useEffect(() => {
     const filteredSubmissions = submissions.filter(submission => {
@@ -97,6 +100,49 @@ const useKnowledgeReview = () => {
     });
   }, []);
 
+  // 编辑知识点
+  const editKnowledgePoint = useCallback((submissionId, knowledgePointId, updatedKnowledgePoint, isExisting = true) => {
+    const key = `${submissionId}_${knowledgePointId}_${isExisting ? 'existing' : 'new'}`;
+
+    setEditedKnowledgePoints(prev => ({
+      ...prev,
+      [key]: updatedKnowledgePoint
+    }));
+
+    // 更新提交中的知识点数据
+    setSubmissionsWithKnowledge(prev => {
+      return prev.map(submission => {
+        if (submission.id !== submissionId) return submission;
+
+        const newSubmission = { ...submission };
+        const knowledgeMarks = { ...newSubmission.data.knowledgeMarks };
+
+        if (isExisting) {
+          // 更新已有知识点
+          knowledgeMarks.existing_knowledge_points = knowledgeMarks.existing_knowledge_points.map(point => {
+            if (point.id === knowledgePointId) {
+              return { ...point, ...updatedKnowledgePoint };
+            }
+            return point;
+          });
+        } else {
+          // 更新新知识点
+          knowledgeMarks.new_knowledge_points = knowledgeMarks.new_knowledge_points.map(point => {
+            if (point.item === knowledgePointId) {
+              return { ...point, ...updatedKnowledgePoint };
+            }
+            return point;
+          });
+        }
+
+        newSubmission.data = { ...newSubmission.data, knowledgeMarks };
+        return newSubmission;
+      });
+    });
+
+    message.success('知识点编辑成功');
+  }, []);
+
   // 提交确认的知识点
   const submitConfirmedKnowledgePoints = useCallback(async (submissionId) => {
     const submission = getSubmission(submissionId);
@@ -109,21 +155,39 @@ const useKnowledgeReview = () => {
       setLoading(true);
       setError(null);
 
+      // 获取当前提交中的知识点数据
+      const currentSubmission = submissionsWithKnowledge.find(s => s.id === submissionId);
+      if (!currentSubmission) {
+        message.error('无法找到相关知识点信息');
+        return;
+      }
+
+      const knowledgeMarksData = currentSubmission.data.knowledgeMarks;
+
       // 准备已有知识点ID列表
-      const existingKnowledgePointIds = submission.data.knowledgeMarks.existing_knowledge_points
+      const existingKnowledgePointIds = knowledgeMarksData.existing_knowledge_points
         .filter(point => isKnowledgePointConfirmed(submissionId, point.id, true))
         .map(point => point.id);
 
       // 准备新知识点列表
-      const newKnowledgePoints = submission.data.knowledgeMarks.new_knowledge_points
+      const newKnowledgePoints = knowledgeMarksData.new_knowledge_points
         .filter(point => isKnowledgePointConfirmed(submissionId, point.item, false))
-        .map(point => ({
-          subject: point.subject,
-          chapter: point.chapter,
-          section: point.section,
-          item: point.item,
-          details: point.details || null
-        }));
+        .map(point => {
+          // 检查是否有编辑过的知识点
+          const editedKey = `${submissionId}_${point.item}_new`;
+          const editedPoint = editedKnowledgePoints[editedKey];
+
+          // 使用编辑过的知识点数据或原始数据
+          const finalPoint = editedPoint || point;
+
+          return {
+            subject: finalPoint.subject,
+            chapter: finalPoint.chapter,
+            section: finalPoint.section,
+            item: finalPoint.item,
+            details: finalPoint.details || null
+          };
+        });
 
       // 调用API
       await markConfirmedKnowledgePoints({
@@ -139,7 +203,7 @@ const useKnowledgeReview = () => {
     } finally {
       setLoading(false);
     }
-  }, [getSubmission, isKnowledgePointConfirmed]);
+  }, [getSubmission, isKnowledgePointConfirmed, submissionsWithKnowledge, editedKnowledgePoints]);
 
   return {
     // 状态
@@ -154,6 +218,7 @@ const useKnowledgeReview = () => {
     cancelRejectKnowledgePoint,
     isKnowledgePointConfirmed,
     isKnowledgePointRejected,
+    editKnowledgePoint,
     submitConfirmedKnowledgePoints
   };
 };
