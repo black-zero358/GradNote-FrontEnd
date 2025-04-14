@@ -5,7 +5,7 @@ const config = {
   // API 配置
   api: {
     // API基础URL
-    baseURL: process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000/api/v1',
+    baseURL: process.env.REACT_APP_BACK_END_API_URL || 'http://127.0.0.1:8000/api/v1',
     // API请求超时时间（毫秒）
     timeout: 30000, // 默认超时时间增加到30秒
     // LLM相关API的超时时间（毫秒）
