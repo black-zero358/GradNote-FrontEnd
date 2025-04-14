@@ -127,7 +127,7 @@ const SubmissionDashboard = () => {
 
   return (
     <PageContainer>
-      <Title level={2}>错题提交</Title>
+      
 
       <Card>
         <UploadContainer>

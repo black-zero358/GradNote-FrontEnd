@@ -220,10 +220,10 @@ const LoginPage = () => {
     <LoginContainer>
       <LoginLeft>
         <Logo>
-          <h1>LOGO</h1>
+          <h1>GradNote</h1>
         </Logo>
         <ImagePlaceholder>
-          <img src="/images/placeholder.jpg" alt="Placeholder" />
+          <img src="https://s2.loli.net/2025/04/09/B87fAZSpOULqcDo.webp" alt="Placeholder" />
         </ImagePlaceholder>
       </LoginLeft>
       

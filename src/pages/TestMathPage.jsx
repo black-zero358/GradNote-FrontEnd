@@ -67,7 +67,7 @@ const TestMathPage = () => {
   
   return (
     <PageContainer>
-      <Title level={2}>数学公式渲染测试</Title>
+      
       
       <StyledCard title="输入测试">
         <TextArea

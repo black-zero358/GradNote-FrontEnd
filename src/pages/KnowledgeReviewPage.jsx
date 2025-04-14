@@ -414,7 +414,7 @@ const KnowledgeReviewPage = () => {
 
   return (
     <PageContainer>
-      <Title level={2}>知识点审核</Title>
+      
 
       {/* 错误提示 */}
       {error && (
