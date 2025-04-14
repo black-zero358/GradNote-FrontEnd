@@ -96,6 +96,7 @@ const SubmissionDashboard = () => {
                   key={submission.id}
                   rowNumber={index + 1}
                   imageUrl={submission.imageUrl}
+                  data={submission.data}
                   steps={submission.steps}
                   onStepClick={(stepName) => handleStepClick(stepName, submission.id)}
                   onDetailsClick={() => handleDetailsClick(submission.id)}
@@ -142,6 +143,7 @@ const SubmissionDashboard = () => {
           content: currentSubmission?.data?.ocr?.text,
           answer: currentSubmission?.data?.answer?.text,
           image_url: currentSubmission?.imageUrl,
+          backend_image_url: currentSubmission?.data?.ocr?.image_url,
           created_at: currentSubmission?.createdAt
         } : null}
         solutionData={currentSubmission?.data?.solving}

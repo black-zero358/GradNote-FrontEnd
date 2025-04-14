@@ -218,6 +218,7 @@ const KnowledgeReviewPage = () => {
         {/* 题目预览 */}
         <QuestionPreview
           imageUrl={currentSubmission.imageUrl}
+          backendImagePath={ocrData.image_url}
           questionText={ocrData.text}
           rowNumber={currentSubmissionIndex + 1}
         />
@@ -284,6 +285,7 @@ const KnowledgeReviewPage = () => {
         {/* 题目预览 */}
         <QuestionPreview
           imageUrl={currentSubmission.imageUrl}
+          backendImagePath={ocrData.image_url}
           questionText={ocrData.text}
           rowNumber={currentSubmissionIndex + 1}
         />

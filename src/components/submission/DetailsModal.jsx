@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Typography, Tabs, Image, Descriptions, Tag, Spin } from 'antd';
 import styled from 'styled-components';
 import MathRenderer from '../common/MathRenderer';
+import { getValidImageUrl, markBlobUrlInvalid, buildBackendImageUrl } from '../../utils/imageUtils';
+import config from '../../config';
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
@@ -23,6 +25,78 @@ const LoadingContainer = styled.div`
   align-items: center;
   min-height: 200px;
 `;
+
+/**
+ * 错题图片组件 - 处理单个错题的图片显示
+ * 使用独立的状态管理每个错题的图片URL
+ * @param {Object} props - 组件属性
+ * @param {Object} props.question - 错题数据
+ * @returns {JSX.Element}
+ */
+const QuestionImage = ({ question }) => {
+  // 初始化状态
+  const [currentImageUrl, setCurrentImageUrl] = useState(null);
+  const [imageError, setImageError] = useState(false);
+
+  // 当错题变化时重置状态
+  useEffect(() => {
+    if (question) {
+      const blobUrl = question.image_url;
+      const backendPath = question.backend_image_url;
+      setCurrentImageUrl(getValidImageUrl(blobUrl, backendPath));
+      setImageError(false);
+    } else {
+      setCurrentImageUrl(null);
+      setImageError(false);
+    }
+  }, [question?.id, question?.image_url, question?.backend_image_url]);
+
+  // 处理图片加载错误
+  const handleImageError = () => {
+    // 如果当前是blob URL并且加载失败，标记为无效并尝试使用后端图片
+    if (currentImageUrl && currentImageUrl.startsWith('blob:')) {
+      markBlobUrlInvalid(currentImageUrl);
+
+      // 尝试使用后端图片URL
+      if (question?.backend_image_url) {
+        const backendUrl = buildBackendImageUrl(question.backend_image_url);
+        setCurrentImageUrl(backendUrl);
+        return;
+      }
+    }
+
+    // 如果后端图片也加载失败或不存在，显示错误状态
+    setImageError(true);
+  };
+
+  if (!question) {
+    return null;
+  }
+
+  return (
+    <ImageContainer>
+      {currentImageUrl && !imageError ? (
+        <Image
+          src={currentImageUrl}
+          alt="错题图片"
+          style={{ maxHeight: '300px' }}
+          onError={handleImageError}
+        />
+      ) : (
+        <div style={{
+          width: '100%',
+          height: '200px',
+          backgroundColor: '#f0f0f0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          无图片
+        </div>
+      )}
+    </ImageContainer>
+  );
+};
 
 /**
  * 错题详情弹窗组件
@@ -60,15 +134,8 @@ const DetailsModal = ({
     return (
       <Tabs defaultActiveKey="question">
         <TabPane tab="错题信息" key="question">
-          {question.image_url && (
-            <ImageContainer>
-              <Image
-                src={question.image_url}
-                alt="错题图片"
-                style={{ maxHeight: '300px' }}
-              />
-            </ImageContainer>
-          )}
+          <QuestionImage question={question} />
+
 
           <Descriptions bordered column={1}>
             <Descriptions.Item label="题目内容">
@@ -165,6 +232,7 @@ const DetailsModal = ({
     );
   };
 
+  // 使用 key 确保每次打开不同错题时组件重新渲染
   return (
     <Modal
       title="错题详情"
@@ -173,6 +241,7 @@ const DetailsModal = ({
       footer={null}
       width={800}
       destroyOnClose
+      key={question?.id || 'no-question'}
     >
       <ModalContent>
         {renderContent()}
