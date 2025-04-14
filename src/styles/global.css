@@ -49,4 +49,29 @@ body {
 
 .data-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-} 
+}
+
+/* LaTeX公式样式 */
+.katex-display {
+  margin: 1em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5em 0;
+}
+
+.katex {
+  font-size: 1.1em;
+}
+
+/* 解题过程内容样式 */
+.solution-content {
+  padding: 8px;
+  line-height: 1.6;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .katex-display {
+    font-size: 0.9em;
+  }
+}

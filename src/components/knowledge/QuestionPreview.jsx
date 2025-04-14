@@ -1,6 +1,7 @@
 import React from 'react';
 import { Typography, Image, Card } from 'antd';
 import styled from 'styled-components';
+import MathRenderer from '../common/MathRenderer';
 
 const { Text } = Typography;
 
@@ -44,10 +45,12 @@ const QuestionPreview = ({ imageUrl, questionText, rowNumber }) => {
           />
         </ImageContainer>
       )}
-      
+
       {questionText && (
         <QuestionText>
-          {questionText}
+          <div className="solution-content">
+            <MathRenderer content={questionText} />
+          </div>
         </QuestionText>
       )}
     </PreviewContainer>

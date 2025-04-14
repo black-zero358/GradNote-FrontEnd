@@ -7,17 +7,18 @@ const LoginPage = React.lazy(() => import('./pages/LoginPage'));
 const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
 const SubmissionDashboard = React.lazy(() => import('./pages/SubmissionDashboard'));
 const KnowledgeReviewPage = React.lazy(() => import('./pages/KnowledgeReviewPage'));
+const TestMathPage = React.lazy(() => import('./pages/TestMathPage'));
 
 // 布局组件
 import MainLayout from './layouts/MainLayout';
 
 // 加载中显示的组件
 const LoadingFallback = () => (
-  <div style={{ 
-    display: 'flex', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    height: '100vh' 
+  <div style={{
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100vh'
   }}>
     正在加载...
   </div>
@@ -36,7 +37,7 @@ const AppRouter = () => {
         <Routes>
           {/* 公共路由 */}
           <Route path="/login" element={<LoginPage />} />
-          
+
           {/* 私有路由 */}
           <Route path="/" element={
             <PrivateRoute>
@@ -45,7 +46,7 @@ const AppRouter = () => {
               </MainLayout>
             </PrivateRoute>
           } />
-          
+
           <Route path="/submission" element={
             <PrivateRoute>
               <MainLayout>
@@ -53,7 +54,7 @@ const AppRouter = () => {
               </MainLayout>
             </PrivateRoute>
           } />
-          
+
           <Route path="/knowledge" element={
             <PrivateRoute>
               <MainLayout>
@@ -61,7 +62,15 @@ const AppRouter = () => {
               </MainLayout>
             </PrivateRoute>
           } />
-          
+
+          <Route path="/test-math" element={
+            <PrivateRoute>
+              <MainLayout>
+                <TestMathPage />
+              </MainLayout>
+            </PrivateRoute>
+          } />
+
           {/* 404重定向 */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
@@ -70,4 +79,4 @@ const AppRouter = () => {
   );
 };
 
-export default AppRouter; 
+export default AppRouter;

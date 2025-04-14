@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Modal, Typography, Input, Button, Alert, Spin, Tabs } from 'antd';
 import styled from 'styled-components';
 import { STEP_STATUS } from '../common/StepIndicator';
+import MathRenderer from '../common/MathRenderer';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -176,7 +177,9 @@ const StepDetailsModal = ({
       case 'ocr':
         return (
           <>
-            <Paragraph>{data?.text || '无识别文本'}</Paragraph>
+            <div className="solution-content">
+              <MathRenderer content={data?.text || '无识别文本'} />
+            </div>
             <ActionContainer>
               <Button type="primary" onClick={handleEditClick}>
                 编辑
@@ -188,7 +191,9 @@ const StepDetailsModal = ({
       case 'answer':
         return (
           <>
-            <Paragraph>{data?.text || '无识别答案'}</Paragraph>
+            <div className="solution-content">
+              <MathRenderer content={data?.text || '无识别答案'} />
+            </div>
             <ActionContainer>
               <Button type="primary" onClick={handleEditClick}>
                 编辑
@@ -218,7 +223,9 @@ const StepDetailsModal = ({
         return (
           <Tabs defaultActiveKey="solution">
             <TabPane tab="解题过程" key="solution">
-              <Paragraph>{data.data.solution || '无解题过程'}</Paragraph>
+              <div className="solution-content">
+                <MathRenderer content={data.data.solution || '无解题过程'} />
+              </div>
             </TabPane>
             <TabPane tab="审核结果" key="review">
               <Alert

@@ -56,7 +56,7 @@ const MainLayout = ({ children }) => {
   const { token: themeToken } = theme.useToken();
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   // 从Zustand store获取用户信息和logout方法
   const { user, logout } = useAuthStore();
 
@@ -101,13 +101,18 @@ const MainLayout = ({ children }) => {
       icon: <BookOutlined />,
       label: <Link to="/knowledge">知识点审核</Link>,
     },
+    {
+      key: '/test-math',
+      icon: <FormOutlined />,
+      label: <Link to="/test-math">数学公式测试</Link>,
+    },
   ];
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Sider 
-        trigger={null} 
-        collapsible 
+      <Sider
+        trigger={null}
+        collapsible
         collapsed={collapsed}
         theme="dark"
         width={220}
@@ -156,4 +161,4 @@ const MainLayout = ({ children }) => {
   );
 };
 
-export default MainLayout; 
+export default MainLayout;

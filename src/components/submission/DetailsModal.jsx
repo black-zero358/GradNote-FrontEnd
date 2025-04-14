@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal, Typography, Tabs, Image, Descriptions, Tag, Spin } from 'antd';
 import styled from 'styled-components';
+import MathRenderer from '../common/MathRenderer';
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
@@ -51,11 +52,11 @@ const DetailsModal = ({
         </LoadingContainer>
       );
     }
-    
+
     if (!question) {
       return <Text>无错题数据</Text>;
     }
-    
+
     return (
       <Tabs defaultActiveKey="question">
         <TabPane tab="错题信息" key="question">
@@ -68,42 +69,48 @@ const DetailsModal = ({
               />
             </ImageContainer>
           )}
-          
+
           <Descriptions bordered column={1}>
             <Descriptions.Item label="题目内容">
-              {question.content || '无内容'}
+              <div className="solution-content">
+                <MathRenderer content={question.content || '无内容'} />
+              </div>
             </Descriptions.Item>
-            
+
             {question.subject && (
               <Descriptions.Item label="科目">
                 <Tag color="blue">{question.subject}</Tag>
               </Descriptions.Item>
             )}
-            
+
             {question.answer && (
               <Descriptions.Item label="答案">
-                {question.answer}
+                <div className="solution-content">
+                  <MathRenderer content={question.answer} />
+                </div>
               </Descriptions.Item>
             )}
-            
+
             {question.remark && (
               <Descriptions.Item label="备注">
                 {question.remark}
               </Descriptions.Item>
             )}
-            
+
             <Descriptions.Item label="创建时间">
               {question.created_at ? new Date(question.created_at).toLocaleString() : '未知'}
             </Descriptions.Item>
           </Descriptions>
         </TabPane>
-        
+
         <TabPane tab="解题过程" key="solution">
           {solutionData?.data ? (
             <>
               <Title level={4}>解题过程</Title>
-              <Paragraph>{solutionData.data.solution || '无解题过程'}</Paragraph>
-              
+              <div className="solution-content">
+                <MathRenderer content={solutionData.data.solution || '无解题过程'} />
+              </div>
+
               <Title level={4}>审核结果</Title>
               <Paragraph>
                 <Tag color={solutionData.data.review_passed ? 'success' : 'warning'}>
@@ -118,7 +125,7 @@ const DetailsModal = ({
             <Text>无解题数据</Text>
           )}
         </TabPane>
-        
+
         <TabPane tab="知识点" key="knowledge">
           {knowledgeData ? (
             <>
@@ -135,7 +142,7 @@ const DetailsModal = ({
               ) : (
                 <Text>无已有知识点</Text>
               )}
-              
+
               <Title level={4}>新知识点</Title>
               {knowledgeData.new_knowledge_points && knowledgeData.new_knowledge_points.length > 0 ? (
                 <ul>
