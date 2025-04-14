@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Upload, Button, message } from 'antd';
-import { InboxOutlined, UploadOutlined } from '@ant-design/icons';
+import { Upload, message } from 'antd';
+import { InboxOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
 
 const { Dragger } = Upload;
@@ -13,12 +13,12 @@ const StyledDragger = styled(Dragger)`
   .ant-upload-drag-icon {
     margin-bottom: 16px;
   }
-  
+
   .ant-upload-text {
     margin-bottom: 8px;
     font-size: 16px;
   }
-  
+
   .ant-upload-hint {
     font-size: 14px;
     color: rgba(0, 0, 0, 0.45);
@@ -32,39 +32,41 @@ const StyledDragger = styled(Dragger)`
  * @param {boolean} props.disabled - 是否禁用
  * @param {string[]} props.acceptTypes - 接受的文件类型
  * @param {number} props.maxSize - 最大文件大小(MB)
+ * @param {boolean} props.multiple - 是否支持多选
  * @returns {JSX.Element}
  */
-const ImageUploader = ({ 
-  onUpload, 
-  disabled = false, 
-  acceptTypes = ['.jpg', '.jpeg', '.png', '.gif'], 
-  maxSize = 5 
+const ImageUploader = ({
+  onUpload,
+  disabled = false,
+  acceptTypes = ['.jpg', '.jpeg', '.png', '.gif'],
+  maxSize = 5,
+  multiple = false
 }) => {
   const [fileList, setFileList] = useState([]);
-  
+
   // 文件上传前检查
   const beforeUpload = (file) => {
     // 检查文件类型
-    const isAcceptedType = acceptTypes.some(type => 
-      file.type.includes(type.replace('.', '')) || 
+    const isAcceptedType = acceptTypes.some(type =>
+      file.type.includes(type.replace('.', '')) ||
       file.name.toLowerCase().endsWith(type)
     );
-    
+
     if (!isAcceptedType) {
       message.error(`只能上传 ${acceptTypes.join(', ')} 格式的图片!`);
       return Upload.LIST_IGNORE;
     }
-    
+
     // 检查文件大小
     const isLessThanMaxSize = file.size / 1024 / 1024 < maxSize;
     if (!isLessThanMaxSize) {
       message.error(`图片必须小于 ${maxSize}MB!`);
       return Upload.LIST_IGNORE;
     }
-    
+
     return true;
   };
-  
+
   // 自定义上传行为
   const customRequest = async ({ file, onSuccess, onError }) => {
     try {
@@ -77,24 +79,17 @@ const ImageUploader = ({
       onError(error);
     }
   };
-  
+
   // 文件状态改变处理
   const handleChange = ({ fileList: newFileList }) => {
     setFileList(newFileList);
   };
-  
-  // 上传按钮
-  const uploadButton = (
-    <Button icon={<UploadOutlined />} disabled={disabled}>
-      选择图片
-    </Button>
-  );
 
   return (
     <UploaderContainer>
       <StyledDragger
         name="file"
-        multiple={false}
+        multiple={multiple}
         fileList={fileList}
         beforeUpload={beforeUpload}
         customRequest={customRequest}
