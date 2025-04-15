@@ -50,7 +50,7 @@ export const buildBackendImageUrl = (backendPath) => {
 
   // 从API baseURL中提取基础URL部分（去掉/api/v1等路径）
   const baseUrlMatch = config.api.baseURL.match(/^(https?:\/\/[^\/]+)/);
-  const baseUrl = baseUrlMatch ? baseUrlMatch[1] : 'http://127.0.0.1:8000';
+  const baseUrl = baseUrlMatch ? baseUrlMatch[1] : process.env.REACT_APP_BACK_END_API_URL || 'http://127.0.0.1:8000/api/v1';
 
   return `${baseUrl}/${normalizedPath}`;
 };
