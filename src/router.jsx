@@ -4,6 +4,7 @@ import { isAuthenticated } from './utils/localStorage';
 
 // 懒加载路由组件
 const LoginPage = React.lazy(() => import('./pages/LoginPage'));
+const RegisterPage = React.lazy(() => import('./pages/RegisterPage'));
 const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
 const SubmissionDashboard = React.lazy(() => import('./pages/SubmissionDashboard'));
 const KnowledgeReviewPage = React.lazy(() => import('./pages/KnowledgeReviewPage'));
@@ -37,6 +38,7 @@ const AppRouter = () => {
         <Routes>
           {/* 公共路由 */}
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
 
           {/* 私有路由 */}
           <Route path="/" element={
