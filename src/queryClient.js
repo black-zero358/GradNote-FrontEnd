@@ -30,15 +30,10 @@ const queryClient = new QueryClient({
       refetchOnMount: true, // 组件挂载时重新获取
       onError: (error) => {
         // 全局错误处理
-        if (error?.response?.status === 401 && isAuthenticated()) {
-          // 处理认证失效
-          message.error('用户凭证已过期，请重新登录');
-          // 清除认证并重定向到登录页面
-          clearAuth();
-          // 使用延时确保错误消息能够显示
-          setTimeout(() => {
-            window.location.href = '/login';
-          }, 1500);
+        // 401错误已经在axios拦截器中处理，这里不需要重复处理
+        if (error?.response?.status === 401) {
+          // 标记错误已处理，避免重复显示错误消息
+          error.handled = true;
         } else if (error?.message === 'Network Error') {
           message.error('网络连接失败，请检查网络设置');
         } else if (error?.response?.status >= 500) {

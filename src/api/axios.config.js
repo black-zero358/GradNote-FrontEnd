@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { message } from 'antd';
 import config from '../config';
-import { getToken, saveToken, clearAuth, getRefreshToken, saveRefreshToken, isAuthenticated } from '../utils/localStorage';
+import { getToken, saveToken, clearAuth, getRefreshToken, saveRefreshToken } from '../utils/localStorage';
+import useAuthStore from '../stores/authStore';
 
 // 创建axios实例
 const axiosInstance = axios.create({
@@ -98,8 +99,18 @@ axiosInstance.interceptors.response.use(
             // 重发原始请求
             return axiosInstance(originalRequest);
           } catch (refreshError) {
-            // 刷新token失败，处理401错误
-            handleUnauthorizedError();
+            // 刷新token失败，清除认证状态并设置token过期标志
+            clearAuth();
+            // 获取Zustand store的setTokenExpired方法
+            const { setTokenExpired } = useAuthStore.getState();
+            // 设置token过期状态
+            setTokenExpired(true);
+
+            // 如果是浏览器环境，显示提示并重定向到登录页面
+            if (typeof window !== 'undefined') {
+              message.error('凭证过期，请尝试重新登录');
+              window.location.href = '/login';
+            }
             return Promise.reject(refreshError);
           } finally {
             isRefreshing = false;
@@ -117,6 +128,26 @@ axiosInstance.interceptors.response.use(
           // 无法刷新token或刷新失败，处理401错误
           handleUnauthorizedError();
           return Promise.reject(error);
+        }
+      }
+
+      // 处理401错误，如果不是刷新token的过程中
+      if (error.response.status === 401 && !isRefreshing) {
+        // 获取Zustand store的方法
+        const { setTokenExpired, logout } = useAuthStore.getState();
+
+        // 设置token过期状态
+        setTokenExpired(true);
+
+        // 清除认证数据
+        logout();
+
+        // 显示提示并重定向到登录页面
+        message.error('凭证过期，请尝试重新登录');
+
+        // 如果是浏览器环境，重定向到登录页面
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
         }
       }
 

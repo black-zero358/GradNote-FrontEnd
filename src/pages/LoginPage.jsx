@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Form, Input, Button, Checkbox, message, Alert, Space, Divider } from 'antd';
+import { Form, Input, Button, Checkbox, message, Alert } from 'antd';
 import { UserOutlined, LockOutlined, EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
@@ -126,19 +126,26 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [form] = Form.useForm();
-  
+
   // 从URL参数中获取重定向路径
   const from = location.state?.from?.pathname || '/';
-  
+
   // 从Zustand store获取状态和方法
-  const { login: authLogin, isAuthenticated, setLoading, error, clearError, setError } = useAuthStore();
+  const { login: authLogin, isAuthenticated, setLoading, error, clearError, setError, tokenExpired, setTokenExpired } = useAuthStore();
 
   // 如果已经登录，重定向到首页或来源页面
   useEffect(() => {
     if (isAuthenticated) {
       navigate(from);
     }
-  }, [isAuthenticated, navigate, from]);
+
+    // 如果是token过期导致的登录页面，显示提示
+    if (tokenExpired) {
+      message.warning('您的登录凭证已过期，请重新登录');
+      // 重置过期状态，避免重复提示
+      setTokenExpired(false);
+    }
+  }, [isAuthenticated, navigate, from, tokenExpired, setTokenExpired]);
 
   // 使用TanStack Query的useMutation处理登录请求
   const loginMutation = useMutation({
@@ -151,27 +158,27 @@ const LoginPage = () => {
     onSuccess: (data) => {
       const { access_token } = data;
       const username = form.getFieldValue('username');
-      
+
       // 保存token，创建简单的用户对象
       authLogin({
         username,
         id: username // 临时使用，后续可通过getCurrentUser API获取完整用户信息
       }, access_token);
-      
+
       message.success('登录成功');
-      
+
       // 重定向到之前尝试访问的页面或首页
       navigate(from);
     },
     onError: (error) => {
       console.error('登录失败:', error);
-      
+
       // 设置错误状态
       setError({
         type: 'login',
         message: error.response?.data?.detail || '登录失败，请检查用户名和密码'
       });
-      
+
       // 根据错误类型显示不同消息
       if (error.message === 'Network Error') {
         message.error('网络连接失败，请检查网络设置');
@@ -193,10 +200,10 @@ const LoginPage = () => {
   // 处理表单提交
   const handleSubmit = (values) => {
     const { username, password, remember } = values;
-    
+
     // 对输入值进行处理
     const trimmedUsername = username.trim();
-    
+
     // 如果输入为空，显示表单错误
     if (!trimmedUsername) {
       form.setFields([
@@ -207,12 +214,12 @@ const LoginPage = () => {
       ]);
       return;
     }
-    
+
     // 发起登录请求
-    loginMutation.mutate({ 
-      username: trimmedUsername, 
-      password, 
-      remember 
+    loginMutation.mutate({
+      username: trimmedUsername,
+      password,
+      remember
     });
   };
 
@@ -226,11 +233,11 @@ const LoginPage = () => {
           <img src="https://s2.loli.net/2025/04/09/B87fAZSpOULqcDo.webp" alt="Placeholder" />
         </ImagePlaceholder>
       </LoginLeft>
-      
+
       <LoginRight>
         <LoginFormContainer>
           <h2>登录</h2>
-          
+
           {/* 显示错误信息 */}
           {error?.type === 'login' && (
             <Alert
@@ -243,7 +250,7 @@ const LoginPage = () => {
               onClose={clearError}
             />
           )}
-          
+
           <StyledForm
             name="login"
             form={form}
@@ -255,17 +262,17 @@ const LoginPage = () => {
             <Form.Item
               name="username"
               rules={[
-                { 
-                  required: true, 
+                {
+                  required: true,
                   message: '请输入用户名',
                   whitespace: true
                 }
               ]}
               data-testid="username-field"
             >
-              <Input 
-                prefix={<UserOutlined />} 
-                placeholder="请输入用户名" 
+              <Input
+                prefix={<UserOutlined />}
+                placeholder="请输入用户名"
                 maxLength={50}
                 autoComplete="username"
               />
@@ -274,9 +281,9 @@ const LoginPage = () => {
             <Form.Item
               name="password"
               rules={[
-                { 
-                  required: true, 
-                  message: '请输入密码' 
+                {
+                  required: true,
+                  message: '请输入密码'
                 }
               ]}
               data-testid="password-field"
@@ -297,9 +304,9 @@ const LoginPage = () => {
             </FormFooter>
 
             <Form.Item>
-              <Button 
-                type="primary" 
-                htmlType="submit" 
+              <Button
+                type="primary"
+                htmlType="submit"
                 block
                 loading={loginMutation.isPending}
                 data-testid="login-button"
@@ -308,7 +315,7 @@ const LoginPage = () => {
               </Button>
             </Form.Item>
           </StyledForm>
-          
+
           <SignupLink>
             没有账户? <Link to="/register">注册</Link>
           </SignupLink>
@@ -318,4 +325,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage; 
+export default LoginPage;

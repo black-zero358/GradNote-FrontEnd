@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { 
-  saveToken, 
-  saveUser, 
-  clearAuth, 
-  getUser, 
-  saveRefreshToken 
+import {
+  saveToken,
+  saveUser,
+  clearAuth,
+  getUser,
+  saveRefreshToken
 } from '../utils/localStorage';
 import config from '../config';
 
@@ -23,12 +23,14 @@ import config from '../config';
  * @property {boolean} isAuthenticated - 是否已认证
  * @property {boolean} isLoading - 是否正在加载
  * @property {Object|null} error - 错误信息
+ * @property {boolean} tokenExpired - 令牌是否已过期
  * @property {Function} login - 登录操作
  * @property {Function} logout - 登出操作
  * @property {Function} updateUser - 更新用户信息
  * @property {Function} setLoading - 设置加载状态
  * @property {Function} setError - 设置错误信息
  * @property {Function} clearError - 清除错误信息
+ * @property {Function} setTokenExpired - 设置令牌过期状态
  */
 
 /**
@@ -43,6 +45,7 @@ const useAuthStore = create(
       isAuthenticated: !!getUser(),
       isLoading: false,
       error: null,
+      tokenExpired: false,
 
       /**
        * 登录操作
@@ -55,17 +58,18 @@ const useAuthStore = create(
           // 保存用户信息和token
           saveUser(userData);
           saveToken(token);
-          
+
           // 如果提供了刷新令牌，也保存它
           if (refreshToken) {
             saveRefreshToken(refreshToken);
           }
-          
+
           // 更新状态
-          set({ 
-            user: userData, 
+          set({
+            user: userData,
             isAuthenticated: true,
-            error: null 
+            error: null,
+            tokenExpired: false
           });
         } catch (error) {
           console.error('登录状态保存失败', error);
@@ -79,10 +83,11 @@ const useAuthStore = create(
       logout: () => {
         // 清除所有认证数据
         clearAuth();
-        set({ 
-          user: null, 
+        set({
+          user: null,
           isAuthenticated: false,
-          error: null
+          error: null,
+          tokenExpired: false
         });
       },
 
@@ -117,16 +122,23 @@ const useAuthStore = create(
        * 清除错误信息
        */
       clearError: () => set({ error: null }),
+
+      /**
+       * 设置令牌过期状态
+       * @param {boolean} expired - 令牌是否已过期
+       */
+      setTokenExpired: (expired) => set({ tokenExpired: expired }),
     }),
     {
       name: `${config.storage.prefix}auth-store`, // 持久化存储名称
       storage: createJSONStorage(() => localStorage), // 使用localStorage存储
-      partialize: (state) => ({ 
-        user: state.user, 
-        isAuthenticated: state.isAuthenticated 
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+        tokenExpired: state.tokenExpired
       }), // 只持久化部分状态
     }
   )
 );
 
-export default useAuthStore; 
+export default useAuthStore;
