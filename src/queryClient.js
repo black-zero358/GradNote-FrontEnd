@@ -6,13 +6,13 @@ import { isAuthenticated } from './utils/localStorage';
 const getRetryConfig = (error) => {
   // 不重试的情况：401未授权、404找不到资源、用户已取消请求
   if (
-    error?.response?.status === 401 || 
+    error?.response?.status === 401 ||
     error?.response?.status === 404 ||
     error.name === 'CanceledError'
   ) {
     return false;
   }
-  
+
   // 对网络错误和服务器错误重试
   return true;
 };
@@ -30,11 +30,10 @@ const queryClient = new QueryClient({
       refetchOnMount: true, // 组件挂载时重新获取
       onError: (error) => {
         // 全局错误处理
-        if (error?.response?.status === 401 && isAuthenticated()) {
-          // 处理认证失效
-          message.error('登录已过期，请重新登录');
-          // 可以在这里清除认证并重定向到登录页面
-          window.location.href = '/login';
+        // 401错误已经在axios拦截器中处理，这里不需要重复处理
+        if (error?.response?.status === 401) {
+          // 标记错误已处理，避免重复显示错误消息
+          error.handled = true;
         } else if (error?.message === 'Network Error') {
           message.error('网络连接失败，请检查网络设置');
         } else if (error?.response?.status >= 500) {
@@ -43,7 +42,7 @@ const queryClient = new QueryClient({
           // 如果错误没有被组件处理，显示默认错误消息
           message.error(error?.response?.data?.message || '操作失败，请重试');
         }
-        
+
         // 记录错误日志
         console.error('[Query Error]', {
           message: error?.message,
@@ -94,4 +93,4 @@ if (process.env.NODE_ENV === 'development') {
   });
 }
 
-export default queryClient; 
+export default queryClient;

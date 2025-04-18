@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layout, Menu, Avatar, Dropdown, Button, theme } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Button, theme, message } from 'antd';
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -12,6 +12,8 @@ import {
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import useAuthStore from '../stores/authStore';
+import useAuthCheck from '../hooks/useAuthCheck';
+import { logoutUser } from '../api/auth.service';
 
 const { Header, Sider, Content } = Layout;
 
@@ -60,10 +62,24 @@ const MainLayout = ({ children }) => {
   // 从Zustand store获取用户信息和logout方法
   const { user, logout } = useAuthStore();
 
+  // 使用自定义Hook检查认证状态
+  useAuthCheck();
+
   // 处理退出登录
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      // 先调用后端登出API
+      await logoutUser();
+      // 然后清除前端状态
+      logout();
+      message.success('已成功退出登录');
+      navigate('/login');
+    } catch (error) {
+      console.error('登出请求失败', error);
+      // 即使后端请求失败，仍然清除前端状态并重定向
+      logout();
+      navigate('/login');
+    }
   };
 
   // 用户下拉菜单
