@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { message } from 'antd';
 import config from '../config';
-import { getToken, saveToken, clearAuth, getRefreshToken, saveRefreshToken } from '../utils/localStorage';
+import { getToken, saveToken, clearAuth, getRefreshToken, saveRefreshToken, isAuthenticated } from '../utils/localStorage';
 
 // 创建axios实例
 const axiosInstance = axios.create({
@@ -30,11 +30,14 @@ const onTokenRefreshed = (token) => {
 
 // 处理401未授权错误
 const handleUnauthorizedError = () => {
+  // 只有在用户已登录的情况下才处理401错误
+  const isUserAuthenticated = isAuthenticated();
+
   // 清除认证状态
   clearAuth();
 
-  // 如果是浏览器环境，显示错误提示并重定向到登录页面
-  if (typeof window !== 'undefined') {
+  // 如果是浏览器环境且用户之前已登录，显示错误提示并重定向到登录页面
+  if (typeof window !== 'undefined' && isUserAuthenticated) {
     message.error('用户凭证已过期，请重新登录');
 
     // 使用延时确保错误消息能够显示
