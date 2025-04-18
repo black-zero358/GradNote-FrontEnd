@@ -48,11 +48,38 @@ export const buildBackendImageUrl = (backendPath) => {
   // 处理Windows路径分隔符
   const normalizedPath = backendPath.replace(/\\/g, '/');
 
-  // 从API baseURL中提取基础URL部分（去掉/api/v1等路径）
-  const baseUrlMatch = config.api.baseURL.match(/^(https?:\/\/[^\/]+)/);
-  const baseUrl = baseUrlMatch ? baseUrlMatch[1] : process.env.REACT_APP_BACK_END_API_URL || 'http://127.0.0.1:8000/api/v1';
+  // 确保路径不以斜杠开头（避免双斜杠）
+  const cleanPath = normalizedPath.startsWith('/') ? normalizedPath.substring(1) : normalizedPath;
 
-  return `${baseUrl}/${normalizedPath}`;
+  // 获取基础URL
+  let baseUrl = '';
+
+  // 1. 首先尝试使用配置的后端服务器基础URL
+  if (config.api.baseServerURL) {
+    baseUrl = config.api.baseServerURL;
+  }
+  // 2. 如果没有配置后端服务器基础URL，尝试从API URL中提取
+  else {
+    // 尝试从config.api.baseURL中提取域名部分
+    const baseUrlMatch = config.api.baseURL.match(/^(https?:\/\/[^\/]+)/);
+    if (baseUrlMatch) {
+      baseUrl = baseUrlMatch[1];
+    }
+    // 3. 如果从API URL中无法提取（可能是相对路径），使用空字符串（表示使用当前域名）
+    else {
+      baseUrl = '';
+    }
+  }
+
+  // 如果baseUrl为空，返回相对路径（使用当前域名）
+  if (!baseUrl) {
+    return `/${cleanPath}`;
+  }
+
+  // 确保基础URL不以斜杠结尾
+  const formattedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+
+  return `${formattedBaseUrl}/${cleanPath}`;
 };
 
 /**

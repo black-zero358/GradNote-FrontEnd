@@ -6,6 +6,8 @@ const config = {
   api: {
     // API基础URL
     baseURL: process.env.REACT_APP_BACK_END_API_URL || 'http://127.0.0.1:8000/api/v1',
+    // 后端服务器基础URL（用于图片等静态资源）
+    baseServerURL: process.env.REACT_APP_BACK_END_BASE_URL || '',
     // API请求超时时间（毫秒）
     timeout: 30000, // 默认超时时间增加到30秒
     // LLM相关API的超时时间（毫秒）
