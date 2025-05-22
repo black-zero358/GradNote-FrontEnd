@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Form, Input, Button, message, Alert, Space } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined, EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, MailOutlined, EyeInvisibleOutlined, EyeTwoTone, GithubOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import styled from 'styled-components';
@@ -107,6 +107,22 @@ const LoginLink = styled.div`
   }
 `;
 
+const Footer = styled.footer`
+  text-align: center;
+  padding: 16px;
+  color: rgba(0, 0, 0, 0.45);
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+
+  a {
+    color: rgba(0, 0, 0, 0.65);
+    &:hover {
+      color: #8a70d6;
+    }
+  }
+`;
+
 /**
  * 注册页面组件
  * @returns {JSX.Element}
@@ -114,7 +130,7 @@ const LoginLink = styled.div`
 const RegisterPage = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
-  
+
   // 从Zustand store获取状态和方法
   const { login: authLogin, isAuthenticated, setLoading, error, clearError, setError } = useAuthStore();
 
@@ -135,21 +151,21 @@ const RegisterPage = () => {
     },
     onSuccess: (data) => {
       const { username, id } = data;
-      
+
       message.success('注册成功，请登录');
-      
+
       // 注册成功后跳转到登录页
       navigate('/login');
     },
     onError: (error) => {
       console.error('注册失败:', error);
-      
+
       // 设置错误状态
       setError({
         type: 'register',
         message: error.response?.data?.detail || '注册失败，请稍后重试'
       });
-      
+
       // 根据错误类型显示不同消息
       if (error.message === 'Network Error') {
         message.error('网络连接失败，请检查网络设置');
@@ -160,7 +176,7 @@ const RegisterPage = () => {
           const usernameErrors = validationErrors.filter(err => err.loc.includes('username'));
           const emailErrors = validationErrors.filter(err => err.loc.includes('email'));
           const passwordErrors = validationErrors.filter(err => err.loc.includes('password'));
-          
+
           if (usernameErrors.length > 0) {
             form.setFields([
               {
@@ -169,7 +185,7 @@ const RegisterPage = () => {
               }
             ]);
           }
-          
+
           if (emailErrors.length > 0) {
             form.setFields([
               {
@@ -178,7 +194,7 @@ const RegisterPage = () => {
               }
             ]);
           }
-          
+
           if (passwordErrors.length > 0) {
             form.setFields([
               {
@@ -210,11 +226,11 @@ const RegisterPage = () => {
   // 处理表单提交
   const handleSubmit = (values) => {
     const { username, email, password, confirmPassword } = values;
-    
+
     // 对输入值进行处理
     const trimmedUsername = username.trim();
     const trimmedEmail = email ? email.trim() : '';
-    
+
     // 如果输入为空，显示表单错误
     if (!trimmedUsername) {
       form.setFields([
@@ -225,7 +241,7 @@ const RegisterPage = () => {
       ]);
       return;
     }
-    
+
     // 确认密码是否匹配
     if (password !== confirmPassword) {
       form.setFields([
@@ -236,10 +252,10 @@ const RegisterPage = () => {
       ]);
       return;
     }
-    
+
     // 发起注册请求
-    registerMutation.mutate({ 
-      username: trimmedUsername, 
+    registerMutation.mutate({
+      username: trimmedUsername,
       email: trimmedEmail || null, // 如果为空字符串，则发送null
       password
     });
@@ -255,11 +271,11 @@ const RegisterPage = () => {
           <img src="https://s2.loli.net/2025/04/09/B87fAZSpOULqcDo.webp" alt="Placeholder" />
         </ImagePlaceholder>
       </RegisterLeft>
-      
+
       <RegisterRight>
         <RegisterFormContainer>
           <h2>注册</h2>
-          
+
           {/* 显示错误信息 */}
           {error?.type === 'register' && (
             <Alert
@@ -272,7 +288,7 @@ const RegisterPage = () => {
               onClose={clearError}
             />
           )}
-          
+
           <StyledForm
             name="register"
             form={form}
@@ -283,8 +299,8 @@ const RegisterPage = () => {
             <Form.Item
               name="username"
               rules={[
-                { 
-                  required: true, 
+                {
+                  required: true,
                   message: '请输入用户名',
                   whitespace: true
                 },
@@ -299,9 +315,9 @@ const RegisterPage = () => {
               ]}
               data-testid="username-field"
             >
-              <Input 
-                prefix={<UserOutlined />} 
-                placeholder="请输入用户名" 
+              <Input
+                prefix={<UserOutlined />}
+                placeholder="请输入用户名"
                 maxLength={30}
                 autoComplete="username"
               />
@@ -310,16 +326,16 @@ const RegisterPage = () => {
             <Form.Item
               name="email"
               rules={[
-                { 
+                {
                   type: 'email',
                   message: '请输入有效的邮箱地址'
                 }
               ]}
               data-testid="email-field"
             >
-              <Input 
-                prefix={<MailOutlined />} 
-                placeholder="请输入邮箱（可选）" 
+              <Input
+                prefix={<MailOutlined />}
+                placeholder="请输入邮箱（可选）"
                 maxLength={100}
                 autoComplete="email"
               />
@@ -328,9 +344,9 @@ const RegisterPage = () => {
             <Form.Item
               name="password"
               rules={[
-                { 
-                  required: true, 
-                  message: '请输入密码' 
+                {
+                  required: true,
+                  message: '请输入密码'
                 },
                 {
                   min: 6,
@@ -351,9 +367,9 @@ const RegisterPage = () => {
               name="confirmPassword"
               dependencies={['password']}
               rules={[
-                { 
-                  required: true, 
-                  message: '请确认密码' 
+                {
+                  required: true,
+                  message: '请确认密码'
                 },
                 ({ getFieldValue }) => ({
                   validator(_, value) {
@@ -375,9 +391,9 @@ const RegisterPage = () => {
             </Form.Item>
 
             <Form.Item>
-              <Button 
-                type="primary" 
-                htmlType="submit" 
+              <Button
+                type="primary"
+                htmlType="submit"
                 block
                 loading={registerMutation.isPending}
                 data-testid="register-button"
@@ -386,12 +402,15 @@ const RegisterPage = () => {
               </Button>
             </Form.Item>
           </StyledForm>
-          
+
           <LoginLink>
             已有账户? <Link to="/login">登录</Link>
           </LoginLink>
         </RegisterFormContainer>
       </RegisterRight>
+      <Footer>
+        © 2025 black zero. All Rights Reserved. | Find me on <a href="https://github.com/black-zero358" target="_blank" rel="noopener noreferrer">GitHub <GithubOutlined /></a>
+      </Footer>
     </RegisterContainer>
   );
 };

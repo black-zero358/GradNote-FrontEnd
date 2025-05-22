@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Form, Input, Button, Checkbox, message, Alert } from 'antd';
-import { UserOutlined, LockOutlined, EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, EyeInvisibleOutlined, EyeTwoTone, GithubOutlined } from '@ant-design/icons';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import styled from 'styled-components';
@@ -115,6 +115,22 @@ const SignupLink = styled.div`
   a {
     color: #8a70d6;
     font-weight: 500;
+  }
+`;
+
+const Footer = styled.footer`
+  text-align: center;
+  padding: 16px;
+  color: rgba(0, 0, 0, 0.45);
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+
+  a {
+    color: rgba(0, 0, 0, 0.65);
+    &:hover {
+      color: #8a70d6;
+    }
   }
 `;
 
@@ -321,6 +337,9 @@ const LoginPage = () => {
           </SignupLink>
         </LoginFormContainer>
       </LoginRight>
+      <Footer>
+        © 2025 black zero. All Rights Reserved. | Find me on <a href="https://github.com/black-zero358" target="_blank" rel="noopener noreferrer">GitHub <GithubOutlined /></a>
+      </Footer>
     </LoginContainer>
   );
 };

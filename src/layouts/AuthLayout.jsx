@@ -1,5 +1,6 @@
 import React from 'react';
 import { Layout, Typography } from 'antd';
+import { GithubOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
 
 const { Content } = Layout;
@@ -38,6 +39,22 @@ const FormWrapper = styled.div`
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 `;
 
+const StyledFooter = styled.footer`
+  text-align: center;
+  padding: 16px;
+  color: rgba(0, 0, 0, 0.45);
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+
+  a {
+    color: rgba(0, 0, 0, 0.65);
+    &:hover {
+      color: #8a70d6;
+    }
+  }
+`;
+
 /**
  * 认证页面的布局组件
  * @param {Object} props
@@ -58,8 +75,11 @@ const AuthLayout = ({ children, title }) => {
           {children}
         </FormWrapper>
       </StyledContent>
+      <StyledFooter>
+        © 2025 black zero. All Rights Reserved. | Find me on <a href="https://github.com/black-zero358" target="_blank" rel="noopener noreferrer">GitHub <GithubOutlined /></a>
+      </StyledFooter>
     </StyledLayout>
   );
 };
 
-export default AuthLayout; 
+export default AuthLayout;

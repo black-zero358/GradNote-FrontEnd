@@ -8,6 +8,7 @@ import {
   BookOutlined,
   UserOutlined,
   LogoutOutlined,
+  GithubOutlined,
 } from '@ant-design/icons';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
@@ -45,6 +46,21 @@ const UserInfo = styled.div`
 const UserName = styled.span`
   margin-left: 8px;
   margin-right: 16px;
+`;
+
+const StyledFooter = styled.footer`
+  text-align: center;
+  padding: 16px;
+  color: rgba(0, 0, 0, 0.45);
+  background: white;
+  border-top: 1px solid #f0f0f0;
+
+  a {
+    color: rgba(0, 0, 0, 0.65);
+    &:hover {
+      color: #8a70d6;
+    }
+  }
 `;
 
 /**
@@ -172,6 +188,9 @@ const MainLayout = ({ children }) => {
         >
           {children}
         </Content>
+        <StyledFooter>
+          © 2025 black zero. All Rights Reserved. | Find me on <a href="https://github.com/black-zero358" target="_blank" rel="noopener noreferrer">GitHub <GithubOutlined /></a>
+        </StyledFooter>
       </Layout>
     </Layout>
   );
